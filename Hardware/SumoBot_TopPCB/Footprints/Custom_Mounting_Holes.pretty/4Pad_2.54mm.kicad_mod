@@ -1,0 +1,14 @@
+(module 4Pad_2.54mm (layer F.Cu) (tedit 5A21D900)
+  (descr "Through hole straight pin header, 1x02, 2.54mm pitch, single row")
+  (tags "Through hole pin header THT 1x02 2.54mm single row")
+  (fp_text reference REF** (at 0 -2.33) (layer F.SilkS) hide
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (fp_text value Pad_2.54mm (at 7.62 -2.54) (layer F.Fab) hide
+    (effects (font (size 1 1) (thickness 0.15)))
+  )
+  (pad 1 thru_hole oval (at 0 0) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask))
+  (pad 2 thru_hole circle (at 0 2.54) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask))
+  (pad 3 thru_hole circle (at 0 5.08) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask))
+  (pad 4 thru_hole circle (at 0 7.62) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask))
+)

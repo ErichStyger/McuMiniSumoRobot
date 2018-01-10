@@ -1,0 +1,7 @@
+(fp_lib_table
+  (lib (name Current_Sources)(type KiCad)(uri "$(KIPRJMOD)/Footprints/Current_Sources.pretty")(options "")(descr ""))
+  (lib (name Inductors)(type KiCad)(uri "$(KIPRJMOD)/Footprints/Inductors.pretty")(options "")(descr ""))
+  (lib (name Sensors)(type KiCad)(uri "$(KIPRJMOD)/Footprints/Sensors.pretty")(options "")(descr ""))
+  (lib (name Buttons_Switches)(type KiCad)(uri "$(KIPRJMOD)/Footprints/Buttons_Switches.pretty")(options "")(descr ""))
+  (lib (name Custom_Mounting_Holes)(type KiCad)(uri "$(KIPRJMOD)/Footprints/Custom_Mounting_Holes.pretty")(options "")(descr ""))
+)

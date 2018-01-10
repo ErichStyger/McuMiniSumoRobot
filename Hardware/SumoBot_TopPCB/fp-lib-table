@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name Custom_Mounting_Holes)(type KiCad)(uri "$(KIPRJMOD)/Footprints/Custom_Mounting_Holes.pretty")(options "")(descr ""))
+)
