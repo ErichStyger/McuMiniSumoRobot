@@ -19,3 +19,10 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+In addition, the following subfolders contain special licensing terms:
+- Software/McuLib/FreeRTOS: Copyright Amazon.com
+- Software/McuLib/SEGGER_RTT: Copyright Segger.com
+- Software/McuLib/SEGGER_SysView: Copyright Segger.com
+- Software/McuLib/TraceRecorder: Copyright Percepio.com
