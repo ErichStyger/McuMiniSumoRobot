@@ -27,6 +27,9 @@
 #if PL_CONFIG_HAS_PROXIMITY
   #include "Proximity.h"
 #endif
+#if PL_CONFIG_HAS_SUMO
+  #include "Sumo.h"
+#endif
 #include "McuFontDisplay.h"
 #include "McuFontHelv08Normal.h"
 #include "McuFontCour08Normal.h"
@@ -42,13 +45,12 @@
 
 typedef enum {
   LCD_MENU_ID_NONE = LCDMENU_ID_NONE, /* special value! */
-  LCD_MENU_ID_MAIN,
+  LCD_MENU_ID_GENERAL,
     LCD_MENU_ID_NUM_VALUE,
     LCD_MENU_ID_BACK_MAIN,
   LCD_MENU_ID_ROBOT,
 #if PL_CONFIG_HAS_SUMO
-    LCD_MENU_ID_SUMO_START,
-    LCD_MENU_ID_SUMO_STOP,
+    LCD_MENU_ID_SUMO_START_STOP,
 #endif
 #if PL_CONFIG_HAS_QUADRATURE
     LCD_MENU_ID_ROBOT_ENCODER,
@@ -66,10 +68,15 @@ typedef enum {
 } LCD_MenuIDs;
 
 typedef enum {
+  LCD_MENU_GRP_ID_MAIN,
+    LCD_MENU_GRP_ID_GENERAL,
+    LCD_MENU_GRP_ID_ROBOT,
+} LCD_MenuGroupID;
+
+typedef enum {
   ROBOT_MENU_POS_BACK_ROBOT,
 #if PL_CONFIG_HAS_SUMO
-  ROBOT_MENU_POS_START,
-  ROBOT_MENU_POS_STOP,
+  ROBOT_MENU_POS_SUMO_START_STOP,
 #endif
 #if PL_CONFIG_HAS_QUADRATURE
   ROBOT_MENU_POS_ENCODER,
@@ -100,12 +107,39 @@ typedef enum {
 
 static LCD_MenuScreenIDs LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;
 
+#if PL_CONFIG_HAS_LCD_HEADER
+static LCDMenu_StatusFlags HeaderMenuHandler(const struct LCDMenu_MenuItem_ *item, LCDMenu_EventType event, void **dataP) {
+  LCDMenu_StatusFlags flags = LCDMENU_STATUS_FLAGS_NONE;
+  (void)item;
+  if (event==LCDMENU_EVENT_GET_HEADER_TEXT && dataP!=NULL && item!=NULL) {
+    if (item->group==LCD_MENU_GRP_ID_MAIN) {
+      *dataP = "DAC Sumo Robot Menu";
+      flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+    }
+    if (item->group==LCD_MENU_GRP_ID_GENERAL) {
+      *dataP = "General Menu";
+      flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+    }
+    if (item->group==LCD_MENU_GRP_ID_ROBOT) {
+      *dataP = "Robot Menu";
+      flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+    }
+  }
+  return flags;
+}
+#endif
+
 static LCDMenu_StatusFlags ValueChangeHandler(const struct LCDMenu_MenuItem_ *item, LCDMenu_EventType event, void **dataP) {
   static int value = 0;
   static uint8_t valueBuf[16];
   LCDMenu_StatusFlags flags = LCDMENU_STATUS_FLAGS_NONE;
 
   (void)item;
+#if PL_CONFIG_HAS_LCD_HEADER
+  if (event==LCDMENU_EVENT_GET_HEADER_TEXT ) {
+    return HeaderMenuHandler(item, event, dataP);
+  }
+#endif
   if (event==LCDMENU_EVENT_GET_TEXT) {
     McuUtility_strcpy(valueBuf, sizeof(valueBuf), (uint8_t*)"Val: ");
     McuUtility_strcatNum32s(valueBuf, sizeof(valueBuf), value);
@@ -244,6 +278,11 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
   LCDMenu_StatusFlags flags = LCDMENU_STATUS_FLAGS_NONE;
 
   (void)item;
+#if PL_CONFIG_HAS_LCD_HEADER
+  if (event==LCDMENU_EVENT_GET_HEADER_TEXT ) {
+    return HeaderMenuHandler(item, event, dataP);
+  }
+#endif
   if (event==LCDMENU_EVENT_ENTER) {
 #if PL_CONFIG_HAS_QUADRATURE
 	  if (item->id==LCD_MENU_ID_ROBOT_ENCODER) {
@@ -273,6 +312,12 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
         LCD_CurrentScreen = LCD_MENU_SCREEN_PROXIMITY;
     }
 #endif
+#if PL_CONFIG_HAS_SUMO
+    if (item->id==LCD_MENU_ID_SUMO_START_STOP) {
+        flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+        SUMO_StartStopSumo();
+    }
+#endif
   } else if (event==LCDMENU_EVENT_GET_TEXT && dataP!=NULL) {
 #if PL_CONFIG_HAS_LINE
     if (item->id==LCD_MENU_ID_ROBOT_CALIBRATE) {
@@ -281,8 +326,18 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
       } else {
         *dataP = "Start Calibrate";
       }
+      flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
     }
-    flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
+#endif
+#if PL_CONFIG_HAS_LINE
+    if (item->id==LCD_MENU_ID_SUMO_START_STOP) {
+      if (SUMO_IsDoingSumo()) {
+        *dataP = "Stop Sumo";
+      } else {
+        *dataP = "Start Sumo";
+      }
+      flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
+    }
 #endif
   }
   return flags;
@@ -292,6 +347,11 @@ static LCDMenu_StatusFlags MenuBackHandler(const struct LCDMenu_MenuItem_ *item,
   LCDMenu_StatusFlags flags = LCDMENU_STATUS_FLAGS_NONE;
 
   (void)item;
+#if PL_CONFIG_HAS_LCD_HEADER
+  if (event==LCDMENU_EVENT_GET_HEADER_TEXT ) {
+    return HeaderMenuHandler(item, event, dataP);
+  }
+#endif
   if (event==LCDMENU_EVENT_ENTER) {
     flags |= LCDMENU_STATUS_FLAGS_HANDLED;
     LCDMenu_OnEvent(LCDMENU_EVENT_LEFT, item); /* go up on menu structure */
@@ -299,28 +359,39 @@ static LCDMenu_StatusFlags MenuBackHandler(const struct LCDMenu_MenuItem_ *item,
   return flags;
 }
 
+static LCDMenu_StatusFlags MainMenuHandler(const struct LCDMenu_MenuItem_ *item, LCDMenu_EventType event, void **dataP) {
+  LCDMenu_StatusFlags flags = LCDMENU_STATUS_FLAGS_NONE;
+
+  (void)item;
+#if PL_CONFIG_HAS_LCD_HEADER
+  if (event==LCDMENU_EVENT_GET_HEADER_TEXT ) {
+    return HeaderMenuHandler(item, event, dataP);
+  }
+#endif
+  return flags;
+}
+
 static const LCDMenu_MenuItem menus[] =
-{/* id,                                     grp, pos,                           up,                       down,                             text,           callback                      flags                  */
-    {LCD_MENU_ID_MAIN,                        0,   0,                           LCD_MENU_ID_NONE,         LCD_MENU_ID_NUM_VALUE,            "General",      NULL,                         LCDMENU_MENU_FLAGS_NONE},
-      {LCD_MENU_ID_NUM_VALUE,                 1,   0,                           LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 NULL,           ValueChangeHandler,           LCDMENU_MENU_FLAGS_EDITABLE},
-      {LCD_MENU_ID_BACK_MAIN,                 1,   1,                           LCD_MENU_ID_MAIN,         LCD_MENU_ID_NONE,                 "BACK",         MenuBackHandler,              LCDMENU_MENU_FLAGS_NONE},
-    {LCD_MENU_ID_ROBOT,                       0,   1,                           LCD_MENU_ID_NONE,         LCD_MENU_ID_BACK_ROBOT,           "Robot",        NULL,                         LCDMENU_MENU_FLAGS_NONE},
-      {LCD_MENU_ID_BACK_ROBOT,                2,   ROBOT_MENU_POS_BACK_ROBOT,   LCD_MENU_ID_ROBOT,        LCD_MENU_ID_NONE,                 "BACK",         MenuBackHandler,              LCDMENU_MENU_FLAGS_NONE},
+{/* id,                               grp,                      pos,                           up,                       down,                             text,           callback                      flags                  */
+    {LCD_MENU_ID_GENERAL,             LCD_MENU_GRP_ID_MAIN,     0,                               LCD_MENU_ID_NONE,         LCD_MENU_ID_NUM_VALUE,            "General",      MainMenuHandler,              LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_NUM_VALUE,         LCD_MENU_GRP_ID_GENERAL,  0,                               LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 NULL,           ValueChangeHandler,           LCDMENU_MENU_FLAGS_EDITABLE},
+      {LCD_MENU_ID_BACK_MAIN,         LCD_MENU_GRP_ID_GENERAL,  1,                               LCD_MENU_ID_GENERAL,      LCD_MENU_ID_NONE,                 "BACK",         MenuBackHandler,              LCDMENU_MENU_FLAGS_NONE},
+    {LCD_MENU_ID_ROBOT,               LCD_MENU_GRP_ID_MAIN,     1,                               LCD_MENU_ID_NONE,         LCD_MENU_ID_BACK_ROBOT,           "Robot",        MainMenuHandler,              LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_BACK_ROBOT,        LCD_MENU_GRP_ID_ROBOT,    ROBOT_MENU_POS_BACK_ROBOT,       LCD_MENU_ID_ROBOT,        LCD_MENU_ID_NONE,                 "BACK",         MenuBackHandler,              LCDMENU_MENU_FLAGS_NONE},
 #if PL_CONFIG_HAS_SUMO
-      {LCD_MENU_ID_SUMO_START,                2,   ROBOT_MENU_POS_START,        LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 "Sumo Start",   RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
-      {LCD_MENU_ID_SUMO_STOP,                 2,   ROBOT_MENU_POS_STOP,         LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 "Sumo Stop",    RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_SUMO_START_STOP,   LCD_MENU_GRP_ID_ROBOT,    ROBOT_MENU_POS_SUMO_START_STOP,  LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 NULL,           RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
 #endif
 #if PL_CONFIG_HAS_QUADRATURE
-      {LCD_MENU_ID_ROBOT_ENCODER,             2,   ROBOT_MENU_POS_ENCODER,      LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 "Encoder",      RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_ROBOT_ENCODER,     LCD_MENU_GRP_ID_ROBOT,     ROBOT_MENU_POS_ENCODER,          LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                "Encoder",      RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
 #endif
 #if PL_CONFIG_HAS_REFLECTANCE
-      {LCD_MENU_ID_ROBOT_REFLECTANCE,         2,   ROBOT_MENU_POS_REFLECTANCE,  LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 "Reflectance",  RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_ROBOT_REFLECTANCE, LCD_MENU_GRP_ID_ROBOT,     ROBOT_MENU_POS_REFLECTANCE,      LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                "Reflectance",  RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
 #endif
 #if PL_CONFIG_HAS_LINE
-      {LCD_MENU_ID_ROBOT_CALIBRATE,           2,   ROBOT_MENU_POS_CALIBRATE,    LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 NULL,           RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_ROBOT_CALIBRATE,   LCD_MENU_GRP_ID_ROBOT,     ROBOT_MENU_POS_CALIBRATE,        LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                NULL,           RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
 #endif
 #if PL_CONFIG_HAS_PROXIMITY
-      {LCD_MENU_ID_ROBOT_PROXIMITY,           2,   ROBOT_MENU_POS_PROXIMITY,    LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 "Proximity",    RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_ROBOT_PROXIMITY,   LCD_MENU_GRP_ID_ROBOT,     ROBOT_MENU_POS_PROXIMITY,        LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                "Proximity",    RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
 #endif
 };
 
@@ -328,13 +399,31 @@ static const LCDMenu_MenuItem menus[] =
 
 static void LCD_Task(void *param) {
   (void)param; /* not used */
+#if PL_CONFIG_HAS_QUADRATURE
+  int lastcntrRight, cntrRight;
+#endif
+
 #if PL_CONFIG_HAS_LCD_MENU
   LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;
-  LCDMenu_InitMenu(menus, sizeof(menus)/sizeof(menus[0]), LCD_MENU_ID_MAIN);
+  LCDMenu_InitMenu(menus, sizeof(menus)/sizeof(menus[0]), LCD_MENU_ID_GENERAL);
   LCDMenu_OnEvent(LCDMENU_EVENT_DRAW, NULL); /* initial refresh */
+#endif
+#if PL_CONFIG_HAS_QUADRATURE
+  lastcntrRight = cntrRight = QUAD_GetRightPos();
 #endif
   for(;;) {
 #if PL_CONFIG_HAS_LCD_MENU
+  #if PL_CONFIG_HAS_QUADRATURE
+    cntrRight = QUAD_GetRightPos();
+    if (cntrRight > lastcntrRight+10) {
+      LCDMenu_OnEvent(LCDMENU_EVENT_UP, NULL);
+      lastcntrRight = cntrRight;
+    } else if (cntrRight < lastcntrRight-10) {
+      LCDMenu_OnEvent(LCDMENU_EVENT_DOWN, NULL);
+      lastcntrRight = cntrRight;
+    }
+  #endif
+
     if (EVNT_EventIsSetAutoClear(EVNT_SW1_LLRELEASED)) {
       if (LCD_CurrentScreen!=LCD_MENU_SCREEN_NONE) { /* key press leaves screen */
         LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;

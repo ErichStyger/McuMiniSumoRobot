@@ -20,6 +20,13 @@
 uint8_t SUMO_ParseCommand(const unsigned char *cmd, bool *handled, const McuShell_StdIOType *io);
 #endif
 
+bool SUMO_IsDoingSumo(void);
+
+void SUMO_StartSumo(void);
+
+void SUMO_StopSumo(void);
+
+void SUMO_StartStopSumo(void);
 
 void SUMO_Init(void);
 

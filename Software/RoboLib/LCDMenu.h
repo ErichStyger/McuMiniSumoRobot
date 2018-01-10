@@ -17,6 +17,9 @@ typedef enum {
   LCDMENU_EVENT_DRAW,
   LCDMENU_EVENT_GET_TEXT, /* get menu text, returned in data handler */
   LCDMENU_EVENT_GET_EDIT_TEXT, /* get menu text in edit mode, returned in data handler */
+#if PL_CONFIG_HAS_LCD_HEADER
+  LCDMENU_EVENT_GET_HEADER_TEXT, /* get header text */
+#endif
   LCDMENU_EVENT_UP,
   LCDMENU_EVENT_DOWN,
   LCDMENU_EVENT_LEFT,

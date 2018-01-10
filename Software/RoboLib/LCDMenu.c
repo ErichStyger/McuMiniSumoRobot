@@ -16,6 +16,11 @@
 #define LCDMENU_SUBMENU_INDICATOR_CHAR    '>' /* sub-menu indicator */
 #define LCDMENU_UPMENU_INDICATOR_CHAR     '<' /* up-menu indicator */
 #define LCDMENU_V_SCROLLBAR_WIDTH         1   /* vertical scroll bar width */
+#if PL_CONFIG_HAS_LCD_HEADER
+  #define PL_CONFIG_LCD_HEADER_HEIGHT   (16) /* header height in pixels */
+#else
+  #define PL_CONFIG_LCD_HEADER_HEIGHT   (0)
+#endif
 
 #define LCDMENU_COLOR_TEXT_FG_NORMAL      McuGDisplaySSD1306_COLOR_BLUE  /* normal text foreground color */
 #define LCDMENU_COLOR_TEXT_BG_NORMAL      McuGDisplaySSD1306_COLOR_BLACK /* normal text background color */
@@ -91,7 +96,7 @@ static unsigned int LCDMenu_MaxNofMenuItems(void) {
 
   font = LCDMENU_GET_FONT();
   McuFontDisplay_GetFontHeight(font, &charHeight, &fontHeight);
-  nofMaxMenuItems = McuGDisplaySSD1306_GetHeight()/fontHeight;
+  nofMaxMenuItems = (McuGDisplaySSD1306_GetHeight()-PL_CONFIG_LCD_HEADER_HEIGHT)/fontHeight;
   return nofMaxMenuItems;
 }
 
@@ -116,19 +121,31 @@ static void LCDMenu_Draw(void) {
   group = menuStatus.topGroup;
   pos = menuStatus.topPos;
   nofTotalMenusOnLevel = LCDMenu_NofMenuItemsInGroup(group);
-  if (nofTotalMenusOnLevel>nofMaxMenuItems) { /* show scrollbar only if needed */
+  if (nofTotalMenusOnLevel>nofMaxMenuItems) { /* show scroll-bar only if needed */
     McuFontDisplay_PixelDim h;
 
     scrollBarWidth = LCDMENU_V_SCROLLBAR_WIDTH+1; /* plus one for a border to the left */
     x = McuGDisplaySSD1306_GetWidth()-LCDMENU_V_SCROLLBAR_WIDTH;
-    y = (McuGDisplaySSD1306_GetHeight()*menuStatus.topPos)/nofTotalMenusOnLevel;
-    h = (McuGDisplaySSD1306_GetHeight()*nofMaxMenuItems)/nofTotalMenusOnLevel; /* h proportional to the items visible */
+    y = ((McuGDisplaySSD1306_GetHeight()-PL_CONFIG_LCD_HEADER_HEIGHT)*menuStatus.topPos)/nofTotalMenusOnLevel;
+    h = ((McuGDisplaySSD1306_GetHeight()-PL_CONFIG_LCD_HEADER_HEIGHT)*nofMaxMenuItems)/nofTotalMenusOnLevel; /* h proportional to the items visible */
     McuGDisplaySSD1306_DrawFilledBox(x, y, LCDMENU_V_SCROLLBAR_WIDTH, h, LCDMENU_COLOR_SCROLL_BAR);
   } else {
-    scrollBarWidth = 0; /* no scrollbar */
+    scrollBarWidth = 0; /* no scroll-bar */
   }
+#if PL_CONFIG_LCD_HEADER_HEIGHT!=0
+  McuGDisplaySSD1306_DrawBox(0, 0, McuGDisplaySSD1306_GetWidth(), PL_CONFIG_LCD_HEADER_HEIGHT, 1, LCDMENU_COLOR_TEXT_FG_NORMAL);
+  x = 2; y = 2;
+  item = LCDMenu_GeIdMenuItem(menuStatus.selectedID);
+  if (item!=NULL && item->handler!=NULL) {
+    text = NULL;
+    (void)item->handler(item, LCDMENU_EVENT_GET_HEADER_TEXT, (void**)&text);
+    if (text!=NULL) {
+      McuFontDisplay_WriteString((unsigned char*)text, LCDMENU_COLOR_TEXT_FG_NORMAL, &x, &y, font); /* write header */
+    }
+  }
+#endif
   x = 0;
-  y = 1; /* have a small border on top of the text */
+  y = PL_CONFIG_LCD_HEADER_HEIGHT+1; /* have a small border on top of the text */
   for(i=0; i<nofMaxMenuItems; i++) {
     item = LCDMenu_GetGroupPosMenuItem(group, pos);
     if (item!=NULL) {
@@ -352,7 +369,6 @@ void LCDMenu_OnEvent(LCDMenu_EventType event, const LCDMenu_MenuItem *menu) {
     case LCDMENU_EVENT_INIT:
       break;
     case LCDMENU_EVENT_DRAW:
-      //LCDMenu_PreDraw();
       LCDMenu_Draw();
       break;
     case LCDMENU_EVENT_UP:

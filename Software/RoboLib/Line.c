@@ -130,7 +130,7 @@ void LINE_CalibrateStartStop(void) {
 }
 
 bool LINE_IsCalibrating(void) {
-  return lineState==LINE_STATE_CALIBRATING;
+  return lineState==LINE_STATE_CALIBRATING || lineState==LINE_STATE_START_CALIBRATION;
 }
 
 uint16_t LINE_GetLinePos(void) {

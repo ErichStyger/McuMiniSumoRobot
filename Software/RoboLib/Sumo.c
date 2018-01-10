@@ -21,8 +21,14 @@
 #define SUMO_CHASE_SPEED   (2000)
 #define SUMO_USE_PROXY     (0 && PL_CONFIG_HAS_PROXIMITY)
 
+/* direct task notification bits */
+#define SUMO_START_SUMO (1<<0)  /* start sumo mode */
+#define SUMO_STOP_SUMO  (1<<1)  /* stop stop sumo */
+static TaskHandle_t sumoTaskHndl;
+
 typedef enum {
 	SUMO_STATE_IDLE,
+  SUMO_STATE_COUNTDOWN,
 	SUMO_STATE_START_RUNNING,
 	SUMO_STATE_RUNNING,
 	SUMO_STATE_STOP,
@@ -31,18 +37,39 @@ typedef enum {
 static SUMO_State_t SUMO_state;
 
 static bool ButtonPressed(void) {
-  if (PIN_IsPinHigh(PIN_SW3)) { /* User button pressed? */
-	  vTaskDelay(pdMS_TO_TICKS(50)); /* simple debounce */
-	  if (PIN_IsPinHigh(PIN_SW3)) { /* still pressed? */
-		  return TRUE;
-	  }
+#if !PL_CONFIG_HAS_LCD_MENU /* sumo gets started and stopped through LCD menu */
+  return EVNT_EventIsSetAutoClear(EVNT_SW1_RELEASED);
+#else
+  uint32_t notifcationValue;
+  (void)xTaskNotifyWait(0UL, SUMO_START_SUMO|SUMO_STOP_SUMO, &notifcationValue, 0); /* check flags */
+  return notifcationValue!=0;
+#endif
+}
+
+bool SUMO_IsDoingSumo(void) {
+  return SUMO_state!=SUMO_STATE_IDLE;
+}
+
+void SUMO_StartSumo(void) {
+  (void)xTaskNotify(sumoTaskHndl, SUMO_START_SUMO, eSetBits);
+}
+
+void SUMO_StopSumo(void) {
+  (void)xTaskNotify(sumoTaskHndl, SUMO_STOP_SUMO, eSetBits);
+}
+
+void SUMO_StartStopSumo(void) {
+  if (SUMO_IsDoingSumo()) {
+    SUMO_StopSumo();
+  } else {
+    SUMO_StartSumo();
   }
-  return FALSE;
 }
 
 static void SumoStateMachine(void) {
 	uint32_t refVal;
 	uint8_t bits;
+	int i;
 
 	for(;;) { /* breaks */
 		switch(SUMO_state) {
@@ -50,11 +77,26 @@ static void SumoStateMachine(void) {
 				if (ButtonPressed()) {
 					refVal = REF_IsWhite();
 					if (refVal==0) { /* all black */
-						vTaskDelay(pdMS_TO_TICKS(1000));
-					  SUMO_state = SUMO_STATE_START_RUNNING;
+					  SUMO_state = SUMO_STATE_COUNTDOWN;
+					  continue;
 					}
 				}
 				break;
+
+			case SUMO_STATE_COUNTDOWN:
+			  for(i=0; i<5000; i+=20) { /* 5 seconds delay */
+			    vTaskDelay(pdMS_TO_TICKS(20));
+			    if (ButtonPressed()) {
+			      break; /* abort */
+			    }
+			  }
+			  if (i>=5000) {
+			    SUMO_state = SUMO_STATE_START_RUNNING;
+			  } else {
+          SUMO_state = SUMO_STATE_IDLE; /* aborted */
+			  }
+			  break;
+
 			case SUMO_STATE_START_RUNNING:
 				DRV_SetSpeed(SUMO_DRIVE_SPEED, SUMO_DRIVE_SPEED);
 				DRV_SetMode(DRV_MODE_SPEED);
@@ -133,17 +175,17 @@ uint8_t SUMO_ParseCommand(const unsigned char *cmd, bool *handled, const McuShel
 
 
 void SUMO_Init(void) {
-	  if (xTaskCreate(
-			SumoTask,  /* pointer to the task */
-	        "SumoTask", /* task name for kernel awareness debugging */
-	        300/sizeof(StackType_t), /* task stack size */
-	        (void*)NULL, /* optional task startup argument */
-	        tskIDLE_PRIORITY+1,  /* initial priority */
-	        (xTaskHandle*)NULL /* optional task handle to create */
-	      ) != pdPASS) {
-	    /*lint -e527 */
-	    for(;;){}; /* error! probably out of memory */
-	    /*lint +e527 */
-	  }
+  if (xTaskCreate(
+    SumoTask,  /* pointer to the task */
+        "SumoTask", /* task name for kernel awareness debugging */
+        300/sizeof(StackType_t), /* task stack size */
+        (void*)NULL, /* optional task startup argument */
+        tskIDLE_PRIORITY+1,  /* initial priority */
+        &sumoTaskHndl /* optional task handle to create */
+      ) != pdPASS) {
+    /*lint -e527 */
+    for(;;){}; /* error! probably out of memory */
+    /*lint +e527 */
+  }
 }
 #endif /* PL_CONFIG_HAS_SUMO */
