@@ -1,9 +1,11 @@
-/*
- * Turn.c
+/**
+ * \file
+ * \brief Robot turning.
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: Mar 11, 2013
- *      Author: Erich Styger
+ * This module implements turning of the robot.
  */
+
 #include "Platform.h"
 #if PL_CONFIG_HAS_TURN
 #include "Turn.h"

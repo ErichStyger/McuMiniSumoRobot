@@ -1,8 +1,9 @@
-/*
- * Line.c
+/**
+ * \file
+ * \brief Line sensor
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 09.01.2018
- *      Author: Erich Styger
+ * This module implements the driver a line sensor based on the IR reflectance sensor.
  */
 
 #include "Platform.h"

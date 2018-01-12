@@ -1,8 +1,9 @@
-/*
- * Reflectance.c
+/**
+ * \file
+ * \brief Reflectance sensor
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 15.12.2017
- *      Author: Erich Styger
+ * This module implements the driver for the IR reflectance sensor.
  */
 
 #include "Platform.h"

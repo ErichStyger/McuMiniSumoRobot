@@ -1,6 +1,6 @@
 /**
  * \file
- * \brief Shell (command line) interface.
+ * \brief Shell command line interface.
  * \author Erich Styger, erich.styger@hslu.ch
  *
  * This module implements a command line interface to the application.

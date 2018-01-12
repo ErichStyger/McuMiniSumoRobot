@@ -28,6 +28,8 @@ void SUMO_StopSumo(void);
 
 void SUMO_StartStopSumo(void);
 
+int16_t SUMO_GetCountDownMs(void);
+
 void SUMO_Init(void);
 
 #endif /* SRC_ROBOT_SUMO_H_ */

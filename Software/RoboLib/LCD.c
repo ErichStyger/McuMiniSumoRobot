@@ -1,10 +1,10 @@
-/*
- * oled.c
+/**
+ * \file
+ * \brief LCD (OLED) Display
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 29.12.2017
- *      Author: Erich Styger
+ * This module implements the high level LCD task for the OLED.
  */
-
 
 #include "Platform.h"
 
@@ -36,19 +36,25 @@
 #include "Event.h"
 
 #if PL_CONFIG_HAS_LCD_MENU
+
 #define GET_FONT()          McuFontHelv08Normal_GetFont()
 #if 0
 #define GET_FONT_FIXED()    McuFontCour08Normal_GetFont()
 #else /* save about 5kB FLASH */
 #define GET_FONT_FIXED()    GET_FONT()
 #endif
+#define LCD_USE_ENCODER_AS_INPUT   (1 && PL_CONFIG_HAS_QUADRATURE)
+#if LCD_USE_ENCODER_AS_INPUT
+  #define LCD_ENCODER_COUNTER_MENU_DELTA   30  /* number of encoder counter ticks for a menu event */
+#endif
 
 typedef enum {
   LCD_MENU_ID_NONE = LCDMENU_ID_NONE, /* special value! */
   LCD_MENU_ID_GENERAL,
+    LCD_MENU_ID_BACK_GENERAL,
     LCD_MENU_ID_NUM_VALUE,
-    LCD_MENU_ID_BACK_MAIN,
   LCD_MENU_ID_ROBOT,
+    LCD_MENU_ID_BACK_ROBOT,
 #if PL_CONFIG_HAS_SUMO
     LCD_MENU_ID_SUMO_START_STOP,
 #endif
@@ -64,7 +70,6 @@ typedef enum {
 #if PL_CONFIG_HAS_PROXIMITY
     LCD_MENU_ID_ROBOT_PROXIMITY,
 #endif
-    LCD_MENU_ID_BACK_ROBOT,
 } LCD_MenuIDs;
 
 typedef enum {
@@ -73,6 +78,7 @@ typedef enum {
     LCD_MENU_GRP_ID_ROBOT,
 } LCD_MenuGroupID;
 
+/* position numbers for menu items in Robot menu */
 typedef enum {
   ROBOT_MENU_POS_BACK_ROBOT,
 #if PL_CONFIG_HAS_SUMO
@@ -92,6 +98,7 @@ typedef enum {
 #endif
 } RobotMenuPos_e;
 
+/* IDs for different screens with status information */
 typedef enum {
     LCD_MENU_SCREEN_NONE,
 #if PL_CONFIG_HAS_QUADRATURE
@@ -103,9 +110,15 @@ typedef enum {
 #if PL_CONFIG_HAS_PROXIMITY
     LCD_MENU_SCREEN_PROXIMITY,
 #endif
+#if PL_CONFIG_HAS_SUMO
+    LCD_MENU_SCREEN_SUMO,
+#endif
 } LCD_MenuScreenIDs;
 
 static LCD_MenuScreenIDs LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;
+#if LCD_USE_ENCODER_AS_INPUT
+  static bool LCD_useEncoderForMenuNavigation = FALSE;
+#endif
 
 #if PL_CONFIG_HAS_LCD_HEADER
 static LCDMenu_StatusFlags HeaderMenuHandler(const struct LCDMenu_MenuItem_ *item, LCDMenu_EventType event, void **dataP) {
@@ -176,6 +189,9 @@ static void ShowEncoderScreen(void) {
   McuUtility_strcatNum32sFormatted(buf, sizeof(buf), QUAD_GetLeftPos(), ' ', 8);
   McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"\n");
   x = 2;
+#if LCDMENU_CONFIG_LCD_HEADER_HEIGHT>0
+  y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT;
+#endif
   McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
 
   McuUtility_strcpy(buf, sizeof(buf), (uint8_t*)"R: ");
@@ -205,6 +221,9 @@ static void ShowReflectanceScreen(void) {
   }
   McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"\n");
   x = 2;
+#if LCDMENU_CONFIG_LCD_HEADER_HEIGHT>0
+  y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT;
+#endif
   McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
 #if PL_CONFIG_HAS_LINE
   buf[0] = '\0';
@@ -245,31 +264,69 @@ static void ShowProximityScreen(void) {
     McuUtility_strcpy(buf, sizeof(buf), (uint8_t*)"Target: no\n");
   }
   x = 2;
+#if LCDMENU_CONFIG_LCD_HEADER_HEIGHT>0
+  y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT;
+#endif
   McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
 
   prox = PROX_GetProxBits();
+  #define LCD_PROX_BOX_HEIGHT   (8)
+  #define LCD_PROX_BOX_WIDTH    (10)
+  #define LCD_PROX_BOX_BORDER   (2)
 
   if (prox&PROX_L_LEFT_BIT) {
-    McuGDisplaySSD1306_DrawFilledBox(x, y, 5, 8, McuGDisplaySSD1306_COLOR_BLUE);
+    McuGDisplaySSD1306_DrawFilledBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, McuGDisplaySSD1306_COLOR_BLUE);
   } else {
-    McuGDisplaySSD1306_DrawBox(x, y, 5, 8, 1, McuGDisplaySSD1306_COLOR_BLUE);
+    McuGDisplaySSD1306_DrawBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, 1, McuGDisplaySSD1306_COLOR_BLUE);
   }
+  x += LCD_PROX_BOX_BORDER+LCD_PROX_BOX_WIDTH;
   if (prox&PROX_L_MIDDLE_BIT) {
-    McuGDisplaySSD1306_DrawFilledBox(x+6, y, 5, 8, McuGDisplaySSD1306_COLOR_BLUE);
+    McuGDisplaySSD1306_DrawFilledBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, McuGDisplaySSD1306_COLOR_BLUE);
   } else {
-    McuGDisplaySSD1306_DrawBox(x+6, y, 5, 8, 1, McuGDisplaySSD1306_COLOR_BLUE);
+    McuGDisplaySSD1306_DrawBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, 1, McuGDisplaySSD1306_COLOR_BLUE);
   }
+  x += LCD_PROX_BOX_BORDER+LCD_PROX_BOX_WIDTH;
   if (prox&PROX_R_MIDDLE_BIT) {
-    McuGDisplaySSD1306_DrawFilledBox(x+12, y, 5, 8, McuGDisplaySSD1306_COLOR_BLUE);
+    McuGDisplaySSD1306_DrawFilledBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, McuGDisplaySSD1306_COLOR_BLUE);
   } else {
-    McuGDisplaySSD1306_DrawBox(x+12, y, 5, 8, 1, McuGDisplaySSD1306_COLOR_BLUE);
+    McuGDisplaySSD1306_DrawBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, 1, McuGDisplaySSD1306_COLOR_BLUE);
   }
+  x += LCD_PROX_BOX_BORDER+LCD_PROX_BOX_WIDTH;
   if (prox&PROX_R_RIGHT_BIT) {
-    McuGDisplaySSD1306_DrawFilledBox(x+18, y, 5, 8, McuGDisplaySSD1306_COLOR_BLUE);
+    McuGDisplaySSD1306_DrawFilledBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, McuGDisplaySSD1306_COLOR_BLUE);
   } else {
-    McuGDisplaySSD1306_DrawBox(x+18, y, 5, 8, 1, McuGDisplaySSD1306_COLOR_BLUE);
+    McuGDisplaySSD1306_DrawBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, 1, McuGDisplaySSD1306_COLOR_BLUE);
   }
 
+  McuGDisplaySSD1306_UpdateFull();
+}
+#endif
+
+#if PL_CONFIG_HAS_SUMO
+static void ShowSumoScreen(void) {
+  McuFontDisplay_PixelDim x, y;
+  uint8_t buf[24];
+  uint16_t ms;
+
+  McuGDisplaySSD1306_Clear();
+  McuGDisplaySSD1306_DrawBox(0, 0, McuGDisplaySSD1306_GetWidth(), McuGDisplaySSD1306_GetHeight(), 1, McuGDisplaySSD1306_COLOR_BLUE);
+
+  x = 2; y = 2;
+  McuFontDisplay_WriteString((uint8_t*)"Sumo:\n", McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT());
+
+  x = 2;
+#if LCDMENU_CONFIG_LCD_HEADER_HEIGHT>0
+  y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT;
+#endif
+  ms = SUMO_GetCountDownMs();
+  if (ms>0) {
+    McuUtility_strcpy(buf, sizeof(buf), (uint8_t*)"Countdown: ");
+    McuUtility_strcatNum16s(buf, sizeof(buf), ms);
+    McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"\n");
+    McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
+  } else if (SUMO_IsDoingSumo()) {
+    McuFontDisplay_WriteString((uint8_t*)"Running Sumo....\nPress button to abort.", McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
+  }
   McuGDisplaySSD1306_UpdateFull();
 }
 #endif
@@ -283,10 +340,13 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
     return HeaderMenuHandler(item, event, dataP);
   }
 #endif
-  if (event==LCDMENU_EVENT_ENTER) {
+  if (event==LCDMENU_EVENT_ENTER || event==LCDMENU_EVENT_RIGHT) {
 #if PL_CONFIG_HAS_QUADRATURE
 	  if (item->id==LCD_MENU_ID_ROBOT_ENCODER) {
         flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+      #if LCD_USE_ENCODER_AS_INPUT
+        LCD_useEncoderForMenuNavigation = FALSE;
+      #endif
         ShowEncoderScreen();
         LCD_CurrentScreen = LCD_MENU_SCREEN_ENCODER;
 	  }
@@ -294,8 +354,21 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
 #if PL_CONFIG_HAS_REFLECTANCE
     if (item->id==LCD_MENU_ID_ROBOT_REFLECTANCE) {
         flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+      #if LCD_USE_ENCODER_AS_INPUT
+        LCD_useEncoderForMenuNavigation = FALSE;
+      #endif
         ShowReflectanceScreen();
         LCD_CurrentScreen = LCD_MENU_SCREEN_REFLECTANCE;
+    }
+#endif
+#if PL_CONFIG_HAS_PROXIMITY
+    if (item->id==LCD_MENU_ID_ROBOT_PROXIMITY) {
+        flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+      #if LCD_USE_ENCODER_AS_INPUT
+        LCD_useEncoderForMenuNavigation = FALSE;
+      #endif
+        ShowProximityScreen();
+        LCD_CurrentScreen = LCD_MENU_SCREEN_PROXIMITY;
     }
 #endif
 #if PL_CONFIG_HAS_LINE
@@ -305,17 +378,15 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
       flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
     }
 #endif
-#if PL_CONFIG_HAS_PROXIMITY
-    if (item->id==LCD_MENU_ID_ROBOT_PROXIMITY) {
-        flags |= LCDMENU_STATUS_FLAGS_HANDLED;
-        ShowProximityScreen();
-        LCD_CurrentScreen = LCD_MENU_SCREEN_PROXIMITY;
-    }
-#endif
 #if PL_CONFIG_HAS_SUMO
     if (item->id==LCD_MENU_ID_SUMO_START_STOP) {
         flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+      #if LCD_USE_ENCODER_AS_INPUT
+        LCD_useEncoderForMenuNavigation = FALSE;
+      #endif
         SUMO_StartStopSumo();
+        ShowSumoScreen();
+        LCD_CurrentScreen = LCD_MENU_SCREEN_SUMO;
     }
 #endif
   } else if (event==LCDMENU_EVENT_GET_TEXT && dataP!=NULL) {
@@ -329,7 +400,7 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
       flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
     }
 #endif
-#if PL_CONFIG_HAS_LINE
+#if PL_CONFIG_HAS_SUMO
     if (item->id==LCD_MENU_ID_SUMO_START_STOP) {
       if (SUMO_IsDoingSumo()) {
         *dataP = "Stop Sumo";
@@ -372,14 +443,14 @@ static LCDMenu_StatusFlags MainMenuHandler(const struct LCDMenu_MenuItem_ *item,
 }
 
 static const LCDMenu_MenuItem menus[] =
-{/* id,                               grp,                      pos,                           up,                       down,                             text,           callback                      flags                  */
-    {LCD_MENU_ID_GENERAL,             LCD_MENU_GRP_ID_MAIN,     0,                               LCD_MENU_ID_NONE,         LCD_MENU_ID_NUM_VALUE,            "General",      MainMenuHandler,              LCDMENU_MENU_FLAGS_NONE},
-      {LCD_MENU_ID_NUM_VALUE,         LCD_MENU_GRP_ID_GENERAL,  0,                               LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 NULL,           ValueChangeHandler,           LCDMENU_MENU_FLAGS_EDITABLE},
-      {LCD_MENU_ID_BACK_MAIN,         LCD_MENU_GRP_ID_GENERAL,  1,                               LCD_MENU_ID_GENERAL,      LCD_MENU_ID_NONE,                 "BACK",         MenuBackHandler,              LCDMENU_MENU_FLAGS_NONE},
-    {LCD_MENU_ID_ROBOT,               LCD_MENU_GRP_ID_MAIN,     1,                               LCD_MENU_ID_NONE,         LCD_MENU_ID_BACK_ROBOT,           "Robot",        MainMenuHandler,              LCDMENU_MENU_FLAGS_NONE},
-      {LCD_MENU_ID_BACK_ROBOT,        LCD_MENU_GRP_ID_ROBOT,    ROBOT_MENU_POS_BACK_ROBOT,       LCD_MENU_ID_ROBOT,        LCD_MENU_ID_NONE,                 "BACK",         MenuBackHandler,              LCDMENU_MENU_FLAGS_NONE},
+{/* id,                               grp,                      pos,                              up,                       down,                             text,           callback                      flags                  */
+    {LCD_MENU_ID_GENERAL,             LCD_MENU_GRP_ID_MAIN,     0,                                LCD_MENU_ID_NONE,         LCD_MENU_ID_BACK_GENERAL,            "General",      MainMenuHandler,              LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_BACK_GENERAL,      LCD_MENU_GRP_ID_GENERAL,  0,                                LCD_MENU_ID_GENERAL,      LCD_MENU_ID_NONE,                 "BACK",         MenuBackHandler,              LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_NUM_VALUE,         LCD_MENU_GRP_ID_GENERAL,  1,                                LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 NULL,           ValueChangeHandler,           LCDMENU_MENU_FLAGS_EDITABLE},
+    {LCD_MENU_ID_ROBOT,               LCD_MENU_GRP_ID_MAIN,     1,                                LCD_MENU_ID_NONE,         LCD_MENU_ID_BACK_ROBOT,           "Robot",        MainMenuHandler,              LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_BACK_ROBOT,        LCD_MENU_GRP_ID_ROBOT,    ROBOT_MENU_POS_BACK_ROBOT,        LCD_MENU_ID_ROBOT,        LCD_MENU_ID_NONE,                 "BACK",         MenuBackHandler,              LCDMENU_MENU_FLAGS_NONE},
 #if PL_CONFIG_HAS_SUMO
-      {LCD_MENU_ID_SUMO_START_STOP,   LCD_MENU_GRP_ID_ROBOT,    ROBOT_MENU_POS_SUMO_START_STOP,  LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 NULL,           RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
+      {LCD_MENU_ID_SUMO_START_STOP,   LCD_MENU_GRP_ID_ROBOT,    ROBOT_MENU_POS_SUMO_START_STOP,   LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                 NULL,           RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
 #endif
 #if PL_CONFIG_HAS_QUADRATURE
       {LCD_MENU_ID_ROBOT_ENCODER,     LCD_MENU_GRP_ID_ROBOT,     ROBOT_MENU_POS_ENCODER,          LCD_MENU_ID_NONE,         LCD_MENU_ID_NONE,                "Encoder",      RobotMenuHandler,             LCDMENU_MENU_FLAGS_NONE},
@@ -395,12 +466,27 @@ static const LCDMenu_MenuItem menus[] =
 #endif
 };
 
+static void OnLCDExitScreen(void) {
+#if PL_CONFIG_HAS_SUMO
+  if (LCD_CurrentScreen==LCD_MENU_SCREEN_SUMO) {
+    SUMO_StopSumo();
+    vTaskDelay(pdMS_TO_TICKS(50)); /* give time to update sumo status */
+  }
+#endif
+  LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;
+  LCDMenu_OnEvent(LCDMENU_EVENT_DRAW, NULL);
+#if LCD_USE_ENCODER_AS_INPUT
+  LCD_useEncoderForMenuNavigation = TRUE;
+#endif
+}
+
 #endif /* PL_CONFIG_HAS_LCD_MENU */
 
 static void LCD_Task(void *param) {
   (void)param; /* not used */
-#if PL_CONFIG_HAS_QUADRATURE
-  int lastcntrRight, cntrRight;
+#if LCD_USE_ENCODER_AS_INPUT
+  int lastCntrLeft, cntrLeft;
+  int lastCntrRight, cntrRight;
 #endif
 
 #if PL_CONFIG_HAS_LCD_MENU
@@ -408,40 +494,58 @@ static void LCD_Task(void *param) {
   LCDMenu_InitMenu(menus, sizeof(menus)/sizeof(menus[0]), LCD_MENU_ID_GENERAL);
   LCDMenu_OnEvent(LCDMENU_EVENT_DRAW, NULL); /* initial refresh */
 #endif
-#if PL_CONFIG_HAS_QUADRATURE
-  lastcntrRight = cntrRight = QUAD_GetRightPos();
+#if LCD_USE_ENCODER_AS_INPUT
+  LCD_useEncoderForMenuNavigation = TRUE;
+  lastCntrLeft = cntrLeft = QUAD_GetLeftPos();
+  lastCntrRight = cntrRight = QUAD_GetRightPos();
 #endif
   for(;;) {
 #if PL_CONFIG_HAS_LCD_MENU
-  #if PL_CONFIG_HAS_QUADRATURE
-    cntrRight = QUAD_GetRightPos();
-    if (cntrRight > lastcntrRight+10) {
-      LCDMenu_OnEvent(LCDMENU_EVENT_UP, NULL);
-      lastcntrRight = cntrRight;
-    } else if (cntrRight < lastcntrRight-10) {
-      LCDMenu_OnEvent(LCDMENU_EVENT_DOWN, NULL);
-      lastcntrRight = cntrRight;
+  #if LCD_USE_ENCODER_AS_INPUT
+    /* handling encoder/wheels as input device */
+    #if PL_CONFIG_HAS_SUMO
+    if (SUMO_IsDoingSumo()) { /* disable encoder navigation during Sumo */
+      LCD_useEncoderForMenuNavigation = FALSE;
+    }
+    #endif
+    if (LCD_useEncoderForMenuNavigation) {
+      cntrLeft = QUAD_GetLeftPos();
+      if (cntrLeft > lastCntrLeft+LCD_ENCODER_COUNTER_MENU_DELTA) {
+        LCDMenu_OnEvent(LCDMENU_EVENT_LEFT, NULL);
+        lastCntrLeft = cntrLeft;
+      } else if (cntrLeft < lastCntrLeft-LCD_ENCODER_COUNTER_MENU_DELTA) {
+        LCDMenu_OnEvent(LCDMENU_EVENT_RIGHT, NULL);
+        lastCntrLeft = cntrLeft;
+      }
+      cntrRight = QUAD_GetRightPos();
+      if (cntrRight > lastCntrRight+LCD_ENCODER_COUNTER_MENU_DELTA) {
+        LCDMenu_OnEvent(LCDMENU_EVENT_UP, NULL);
+        lastCntrRight = cntrRight;
+      } else if (cntrRight < lastCntrRight-LCD_ENCODER_COUNTER_MENU_DELTA) {
+        LCDMenu_OnEvent(LCDMENU_EVENT_DOWN, NULL);
+        lastCntrRight = cntrRight;
+      }
+    } else {
+      lastCntrLeft = cntrLeft = QUAD_GetLeftPos();
+      lastCntrRight = cntrRight = QUAD_GetRightPos();
     }
   #endif
 
     if (EVNT_EventIsSetAutoClear(EVNT_SW1_LLRELEASED)) {
       if (LCD_CurrentScreen!=LCD_MENU_SCREEN_NONE) { /* key press leaves screen */
-        LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;
-        LCDMenu_OnEvent(LCDMENU_EVENT_DRAW, NULL);
+        OnLCDExitScreen();
       } else {
         LCDMenu_OnEvent(LCDMENU_EVENT_ENTER, NULL);
       }
     } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_LRELEASED)) {
       if (LCD_CurrentScreen!=LCD_MENU_SCREEN_NONE) { /* key press leaves screen */
-        LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;
-        LCDMenu_OnEvent(LCDMENU_EVENT_DRAW, NULL);
+        OnLCDExitScreen();
       } else {
         LCDMenu_OnEvent(LCDMENU_EVENT_UP, NULL);
       }
     } else if (EVNT_EventIsSetAutoClear(EVNT_SW1_RELEASED)) {
       if (LCD_CurrentScreen!=LCD_MENU_SCREEN_NONE) { /* key press leaves screen */
-        LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;
-        LCDMenu_OnEvent(LCDMENU_EVENT_DRAW, NULL);
+        OnLCDExitScreen();
       } else {
         LCDMenu_OnEvent(LCDMENU_EVENT_DOWN, NULL);
       }
@@ -460,6 +564,11 @@ static void LCD_Task(void *param) {
 #if PL_CONFIG_HAS_PROXIMITY
     if (LCD_CurrentScreen==LCD_MENU_SCREEN_PROXIMITY) {
       ShowProximityScreen();
+    }
+#endif
+#if PL_CONFIG_HAS_SUMO
+    if (LCD_CurrentScreen==LCD_MENU_SCREEN_SUMO) {
+      ShowSumoScreen();
     }
 #endif
 #endif /* PL_CONFIG_HAS_LCD_MENU */

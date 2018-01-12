@@ -1,6 +1,6 @@
 /**
  * \file
- * \brief Shell and console interface implementation.
+ * \brief Shell command line implementation.
  * \author Erich Styger
  *
  * This module implements the front to the console/shell functionality.

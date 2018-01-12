@@ -16,11 +16,6 @@
 #define LCDMENU_SUBMENU_INDICATOR_CHAR    '>' /* sub-menu indicator */
 #define LCDMENU_UPMENU_INDICATOR_CHAR     '<' /* up-menu indicator */
 #define LCDMENU_V_SCROLLBAR_WIDTH         1   /* vertical scroll bar width */
-#if PL_CONFIG_HAS_LCD_HEADER
-  #define PL_CONFIG_LCD_HEADER_HEIGHT   (16) /* header height in pixels */
-#else
-  #define PL_CONFIG_LCD_HEADER_HEIGHT   (0)
-#endif
 
 #define LCDMENU_COLOR_TEXT_FG_NORMAL      McuGDisplaySSD1306_COLOR_BLUE  /* normal text foreground color */
 #define LCDMENU_COLOR_TEXT_BG_NORMAL      McuGDisplaySSD1306_COLOR_BLACK /* normal text background color */
@@ -96,7 +91,7 @@ static unsigned int LCDMenu_MaxNofMenuItems(void) {
 
   font = LCDMENU_GET_FONT();
   McuFontDisplay_GetFontHeight(font, &charHeight, &fontHeight);
-  nofMaxMenuItems = (McuGDisplaySSD1306_GetHeight()-PL_CONFIG_LCD_HEADER_HEIGHT)/fontHeight;
+  nofMaxMenuItems = (McuGDisplaySSD1306_GetHeight()-LCDMENU_CONFIG_LCD_HEADER_HEIGHT)/fontHeight;
   return nofMaxMenuItems;
 }
 
@@ -126,15 +121,15 @@ static void LCDMenu_Draw(void) {
 
     scrollBarWidth = LCDMENU_V_SCROLLBAR_WIDTH+1; /* plus one for a border to the left */
     x = McuGDisplaySSD1306_GetWidth()-LCDMENU_V_SCROLLBAR_WIDTH;
-    y = ((McuGDisplaySSD1306_GetHeight()-PL_CONFIG_LCD_HEADER_HEIGHT)*menuStatus.topPos)/nofTotalMenusOnLevel;
-    h = ((McuGDisplaySSD1306_GetHeight()-PL_CONFIG_LCD_HEADER_HEIGHT)*nofMaxMenuItems)/nofTotalMenusOnLevel; /* h proportional to the items visible */
+    y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT + ((McuGDisplaySSD1306_GetHeight()-LCDMENU_CONFIG_LCD_HEADER_HEIGHT)*menuStatus.topPos)/nofTotalMenusOnLevel;
+    h = ((McuGDisplaySSD1306_GetHeight()-LCDMENU_CONFIG_LCD_HEADER_HEIGHT)*nofMaxMenuItems)/nofTotalMenusOnLevel; /* h proportional to the items visible */
     McuGDisplaySSD1306_DrawFilledBox(x, y, LCDMENU_V_SCROLLBAR_WIDTH, h, LCDMENU_COLOR_SCROLL_BAR);
   } else {
     scrollBarWidth = 0; /* no scroll-bar */
   }
-#if PL_CONFIG_LCD_HEADER_HEIGHT!=0
-  McuGDisplaySSD1306_DrawBox(0, 0, McuGDisplaySSD1306_GetWidth(), PL_CONFIG_LCD_HEADER_HEIGHT, 1, LCDMENU_COLOR_TEXT_FG_NORMAL);
-  x = 2; y = 2;
+#if LCDMENU_CONFIG_LCD_HEADER_HEIGHT!=0
+  McuGDisplaySSD1306_DrawBox(0, 0, McuGDisplaySSD1306_GetWidth(), LCDMENU_CONFIG_LCD_HEADER_HEIGHT, 1, LCDMENU_COLOR_TEXT_FG_NORMAL);
+  x = 2; y = 3;
   item = LCDMenu_GeIdMenuItem(menuStatus.selectedID);
   if (item!=NULL && item->handler!=NULL) {
     text = NULL;
@@ -145,7 +140,7 @@ static void LCDMenu_Draw(void) {
   }
 #endif
   x = 0;
-  y = PL_CONFIG_LCD_HEADER_HEIGHT+1; /* have a small border on top of the text */
+  y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT+1; /* have a small border on top of the text */
   for(i=0; i<nofMaxMenuItems; i++) {
     item = LCDMenu_GetGroupPosMenuItem(group, pos);
     if (item!=NULL) {
@@ -211,6 +206,8 @@ static void LCDMenu_CursorUp(void) {
       if (item->pos>0) {
         item = LCDMenu_GetGroupPosMenuItem(item->group, item->pos-1); /* get next possible item */
         /* returns NULL if not found */
+      } else {
+        item = NULL; /* no previous item in list */
       }
       if (item !=NULL) {
         menuStatus.selectedID = item->id;
@@ -218,17 +215,24 @@ static void LCDMenu_CursorUp(void) {
           menuStatus.topPos = item->pos;
         }
         flags |= LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
-#if 0
+#if LCDMENU_CONFIG_MENU_WRAP_AROUND
       } else { /* first item in list: wrap around to last item in group */
-        item = LCDMenu_GeIdMenuItem(menuStatus.selectedID); /* get current selected item */
-        /* \todo */
-        if (item!=NULL && item->pos>0) {
-          item = LCDMenu_GetGroupPosMenuItem(item->group, 0); /* get last item in list with position 0 */
-          if (item!=NULL) {
-            menuStatus.topPos = 0;
+        int pos, nofPossibleMenuItems;
+
+        pos = LCDMenu_NofMenuItemsInGroup(menuStatus.topGroup); /* find out how many items we have in group */
+        if (pos>0) { /* sanity check, should be larger than zero */
+          pos--; /* position of last menu item in group */
+          item = LCDMenu_GetGroupPosMenuItem(menuStatus.topGroup, pos); /* get item */
+          if (item!=NULL) { /* sanity check */
+            nofPossibleMenuItems = LCDMenu_MaxNofMenuItems();
+            if (pos >= nofPossibleMenuItems) { /* is the full menu visible? */
+              menuStatus.topPos = pos - nofPossibleMenuItems + 1;
+            } else {
+              menuStatus.topPos = 0;
+            }
             menuStatus.selectedID = item->id;
-            flags |= LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
           }
+          flags |= LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
         }
 #endif
       }
@@ -261,6 +265,7 @@ static void LCDMenu_CursorDown(void) {
           menuStatus.topPos = item->pos-maxNofMenuItems+1;
         }
         flags |= LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
+#if LCDMENU_CONFIG_MENU_WRAP_AROUND
       } else { /* last item in list: wrap around to first item in group */
         item = LCDMenu_GeIdMenuItem(menuStatus.selectedID); /* get current selected item */
         if (item!=NULL && item->pos>0) {
@@ -271,6 +276,7 @@ static void LCDMenu_CursorDown(void) {
             flags |= LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
           }
         }
+#endif
       }
     }
     if (flags&LCDMENU_STATUS_FLAGS_UPDATE_VIEW) { /* need to update view? */
@@ -392,7 +398,7 @@ void LCDMenu_OnEvent(LCDMenu_EventType event, const LCDMenu_MenuItem *menu) {
 }
 
 void LCDMenu_Init(void) {
-  menuStatus.topGroup = 0;
+  menuStatus.topGroup = LCDMENU_GROUP_ROOT;
   menuStatus.topPos = 0;
   menuStatus.selectedID = 1;
 }

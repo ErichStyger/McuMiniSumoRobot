@@ -1,8 +1,9 @@
-/*
- * Quadrature.c
+/**
+ * \file
+ * \brief Quadrature encoder
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 14.12.2017
- *      Author: Erich Styger
+ * This module implements decoding the quadrature position encoders.
  */
 
 #include "Platform.h"

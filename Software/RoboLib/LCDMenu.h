@@ -12,6 +12,14 @@
 #include <stdint.h>
 
 #if PL_CONFIG_HAS_LCD_MENU
+
+#if PL_CONFIG_HAS_LCD_HEADER
+  #define LCDMENU_CONFIG_LCD_HEADER_HEIGHT   (16) /* header height in pixels */
+#else
+  #define LCDMENU_CONFIG_LCD_HEADER_HEIGHT   (0)
+#endif
+#define LCDMENU_CONFIG_MENU_WRAP_AROUND      (0) /* if set to 1, the menus will wrap around (top and bottom position */
+
 typedef enum {
   LCDMENU_EVENT_INIT,
   LCDMENU_EVENT_DRAW,

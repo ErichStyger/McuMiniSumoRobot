@@ -25,6 +25,7 @@
 #define SUMO_START_SUMO (1<<0)  /* start sumo mode */
 #define SUMO_STOP_SUMO  (1<<1)  /* stop stop sumo */
 static TaskHandle_t sumoTaskHndl;
+static int16_t sumoCntDownMs = 0;
 
 typedef enum {
 	SUMO_STATE_IDLE,
@@ -66,10 +67,13 @@ void SUMO_StartStopSumo(void) {
   }
 }
 
+int16_t SUMO_GetCountDownMs(void) {
+  return sumoCntDownMs;
+}
+
 static void SumoStateMachine(void) {
 	uint32_t refVal;
 	uint8_t bits;
-	int i;
 
 	for(;;) { /* breaks */
 		switch(SUMO_state) {
@@ -84,17 +88,20 @@ static void SumoStateMachine(void) {
 				break;
 
 			case SUMO_STATE_COUNTDOWN:
-			  for(i=0; i<5000; i+=20) { /* 5 seconds delay */
-			    vTaskDelay(pdMS_TO_TICKS(20));
+			  sumoCntDownMs = 5000;
+			  while(sumoCntDownMs>0) { /* 5 seconds delay */
+			    vTaskDelay(pdMS_TO_TICKS(50));
+			    sumoCntDownMs -= 50;
 			    if (ButtonPressed()) {
 			      break; /* abort */
 			    }
 			  }
-			  if (i>=5000) {
+			  if (sumoCntDownMs<=0) { /* count down expired */
 			    SUMO_state = SUMO_STATE_START_RUNNING;
 			  } else {
           SUMO_state = SUMO_STATE_IDLE; /* aborted */
 			  }
+        sumoCntDownMs = 0;
 			  break;
 
 			case SUMO_STATE_START_RUNNING:

@@ -829,6 +829,16 @@ void McuSSD1306_Init(void)
 #if McuSSD1306_CONFIG_CLEAR_DISPLAY_IN_INIT
   McuSSD1306_Clear();
 #endif
+  McuSSD1306_DisplayInvert(1);
+  McuSSD1306_DisplayInvert(0);
+  McuSSD1306_DisplayOn(1);
+  McuSSD1306_DisplayOn(0);
+  McuSSD1306_DisplayOn(1);
+
+  SSD1306_SetPageStartAddr(0);
+  SSD1306_SetColStartAddr(0);
+  SSD1306_PrintChar('a');
+  SSD1306_PrintChar('B');
 }
 
 /* END McuSSD1306. */

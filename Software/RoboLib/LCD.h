@@ -1,13 +1,14 @@
-/*
- * oled.h
+/**
+ * \file
+ * \brief LCD (OLED) Display
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 30.12.2017
- *      Author: Erich Styger
+ * This module implements the high level LCD task for the OLED.
  */
 
-#ifndef SRC_OLED_H_
-#define SRC_OLED_H_
+#ifndef SRC_LCD_H_
+#define SRC_LCD_H_
 
 void LCD_Init(void);
 
-#endif /* SRC_OLED_H_ */
+#endif /* SRC_LCD_H_ */

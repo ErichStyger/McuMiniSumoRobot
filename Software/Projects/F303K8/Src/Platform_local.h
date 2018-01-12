@@ -1,8 +1,7 @@
-/*
- * Platform_local.h
- *
- *  Created on: 30.11.2017
- *      Author: Erich Styger
+/**
+ * \file
+ * \brief Using this configuration file features and functionality can be configured.
+ * \author Erich Styger, erich.styger@hslu.ch
  */
 
 #ifndef SRC_PLATFORM_LOCAL_H_
@@ -21,8 +20,8 @@
 #define PL_CONFIG_HAS_TRIGGER       (1)
 #define PL_CONFIG_HAS_DEBOUNCE      (1 && PL_CONFIG_HAS_TRIGGER)
 
-#define PL_CONFIG_HAS_PROXIMITY     (1)
-#define PL_CONFIG_HAS_REFLECTANCE 	(1)
+#define PL_CONFIG_HAS_PROXIMITY     (0)
+#define PL_CONFIG_HAS_REFLECTANCE 	(0)
 #define PL_CONFIG_HAS_LINE          (1 && PL_CONFIG_HAS_REFLECTANCE)
 
 #define PL_CONFIG_HAS_QUADRATURE    (1 && PL_CONFIG_HAS_MOTOR)
@@ -47,7 +46,7 @@
 
 #define PL_CONFIG_HAS_LCD           (1 && PL_CONFIG_HAS_I2C)
 #define PL_CONFIG_HAS_LCD_MENU      (1 && PL_CONFIG_HAS_LCD && PL_CONFIG_HAS_DEBOUNCE)
-#define PL_CONFIG_HAS_LCD_HEADER    (1 && PL_CONFIG_HAS_LCD_MENU)
+#define PL_CONFIG_HAS_LCD_HEADER    (0 && PL_CONFIG_HAS_LCD_MENU)
 
 #define PL_CONFIG_HAS_LINE_FOLLOW   (0 && PL_CONFIG_HAS_MOTOR && PL_CONFIG_HAS_LINE && PL_CONFIG_HAS_LINE_PID)
 #define PL_CONFIG_HAS_LINE_MAZE     (0 && PL_CONFIG_HAS_LINE_FOLLOW)
@@ -68,7 +67,7 @@
 #define PL_SLOWER_SPEED         0
 
 /* enable one of the below */
-#define PL_CONGIG_DO_SUMO      (1 && PL_CONFIG_HAS_SUMO)
+#define PL_CONGIG_DO_SUMO      (0 && PL_CONFIG_HAS_SUMO)
 #define PL_CONFIG_DO_TEST_IR   (0 && PL_CONFIG_HAS_PROXIMITY && PL_CONFIG_HAS_TURN)
 #define PL_CONFIG_DO_TEST_PUSH (0 && PL_CONFIG_HAS_MOTOR)
 

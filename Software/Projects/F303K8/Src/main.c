@@ -1,6 +1,6 @@
 /**
  * \file
- * \brief Main entry point of the PRG_G demo application.
+ * \brief Main entry point of the application.
  * \author Erich Styger, erich.styger@hslu.ch
  *
  * This module implements main() and configures the hardware.
