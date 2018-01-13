@@ -8,20 +8,27 @@
 #define SRC_PLATFORM_LOCAL_H_
 
 #define PL_CONFIG_IS_DAC_ROBOT      (1)
+  /*!< 1: is DAC Sumo robot */
 
 #define PL_CONFIG_HAS_TIMER         (1)
-#define PL_CONFIG_HAS_SHELL 		    (0)
+  /*!< 1: enable timer module */
+#define PL_CONFIG_HAS_SHELL 		    (1)
+  /*!< 1: enable timer shell module */
 #define PL_CONFIG_HAS_EVENTS        (1)
+  /*!< 1: enable events module */
 #define PL_CONFIG_HAS_MOTOR         (1)
+  /*!< 1: enable motor module */
 
 #define PL_CONFIG_HAS_KEYS          (1)
+  /*!< 1: enable handling of keys/push buttons */
 #define PL_CONFIG_NOF_KEYS          (1)
+  /*!< number of available keys/push buttons */
 #define PL_CONFIG_HAS_KBI           (0) /* NYI */
 #define PL_CONFIG_HAS_TRIGGER       (1)
 #define PL_CONFIG_HAS_DEBOUNCE      (1 && PL_CONFIG_HAS_TRIGGER)
 
-#define PL_CONFIG_HAS_PROXIMITY     (0)
-#define PL_CONFIG_HAS_REFLECTANCE 	(0)
+#define PL_CONFIG_HAS_PROXIMITY     (1)
+#define PL_CONFIG_HAS_REFLECTANCE 	(1)
 #define PL_CONFIG_HAS_LINE          (1 && PL_CONFIG_HAS_REFLECTANCE)
 
 #define PL_CONFIG_HAS_QUADRATURE    (1 && PL_CONFIG_HAS_MOTOR)
@@ -40,7 +47,7 @@
 #define PL_CONFIG_HAS_UART          (0) /* NYI */
 #define PL_CONFIG_HAS_CONFIG_NVM    (0) /* NYI */
 
-#define PL_CONFIG_HAS_I2C           (1)
+#define PL_CONFIG_HAS_I2C           (0)
 #define PL_CONFIG_HAS_HW_I2C        (1 && PL_CONFIG_HAS_I2C) /* otherwise uses SW I2C */
 #define PL_CONFIG_HAS_SW_I2C        (!PL_CONFIG_HAS_HW_I2C && PL_CONFIG_HAS_I2C) /* otherwise uses SW I2C */
 

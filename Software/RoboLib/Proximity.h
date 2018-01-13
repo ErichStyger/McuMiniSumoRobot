@@ -1,8 +1,9 @@
-/*
- * Proximity.h
+/**
+ * \file
+ * \brief Proximity Module
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 14.12.2017
- *      Author: Erich Styger
+ * This module handles the proximity (IR) sensors to detect an obstacle or another robot.
  */
 
 #ifndef SRC_PROXIMITY_H_

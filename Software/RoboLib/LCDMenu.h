@@ -1,8 +1,9 @@
-/*
- * LCDMenu.h
+/**
+ * \file
+ * \brief Hierarchical Menu System
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 09.09.2016
- *      Author: Erich Styger Local
+ * This module implements a text menu for small displays
  */
 
 #ifndef SOURCES_LCDMENU_H_

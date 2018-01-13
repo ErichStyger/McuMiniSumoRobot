@@ -45,7 +45,7 @@
 #endif
 #define LCD_USE_ENCODER_AS_INPUT   (1 && PL_CONFIG_HAS_QUADRATURE)
 #if LCD_USE_ENCODER_AS_INPUT
-  #define LCD_ENCODER_COUNTER_MENU_DELTA   30  /* number of encoder counter ticks for a menu event */
+  #define LCD_ENCODER_COUNTER_MENU_DELTA   25  /* number of encoder counter ticks for a menu event */
 #endif
 
 typedef enum {

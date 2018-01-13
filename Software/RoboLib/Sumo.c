@@ -1,8 +1,9 @@
-/*
- * Sumo.c
+/**
+ * \file
+ * \brief Sumo Module
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 19.12.2017
- *      Author: Erich Styger
+ * This module implements the logic behind running the robot as Sumo robot
  */
 
 #include "Platform.h"
@@ -16,6 +17,7 @@
 #include "Drive.h"
 #include "Turn.h"
 #include "Reflectance.h"
+#include "Event.h"
 
 #define SUMO_DRIVE_SPEED   (1000)
 #define SUMO_CHASE_SPEED   (2000)

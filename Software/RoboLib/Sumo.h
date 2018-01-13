@@ -1,8 +1,9 @@
-/*
- * Sumo.h
+/**
+ * \file
+ * \brief Sumo Module
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 19.12.2017
- *      Author: Erich Styger
+ * This module implements the logic behind running the robot as Sumo robot
  */
 
 #ifndef SRC_ROBOT_SUMO_H_
