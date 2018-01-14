@@ -10,6 +10,5 @@ This small (10x10 cm) competitive, cost effective Mini Sumo robot is itended to 
 - show case for conferences and exhibitions 
 - fun projects
 
-Links:
-- New Concept for 2018 Mini Sumo Roboter: https://mcuoneclipse.com/2017/12/17/new-concept-for-2018-mini-sumo-roboter/
-- Making Perfect Sticky DIY Sumo Robot Tires: https://mcuoneclipse.com/2017/12/28/making-perfect-sticky-diy-sumo-robot-tires/
+See https://github.com/ErichStyger/McuMiniSumoRobot/wiki for more details about this project.
+
