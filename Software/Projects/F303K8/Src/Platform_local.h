@@ -12,7 +12,7 @@
 
 #define PL_CONFIG_HAS_TIMER         (1)
   /*!< 1: enable timer module */
-#define PL_CONFIG_HAS_SHELL 		    (1)
+#define PL_CONFIG_HAS_SHELL 		    (0)
   /*!< 1: enable timer shell module */
 #define PL_CONFIG_HAS_EVENTS        (1)
   /*!< 1: enable events module */
@@ -47,7 +47,7 @@
 #define PL_CONFIG_HAS_UART          (0) /* NYI */
 #define PL_CONFIG_HAS_CONFIG_NVM    (0) /* NYI */
 
-#define PL_CONFIG_HAS_I2C           (0)
+#define PL_CONFIG_HAS_I2C           (1)
 #define PL_CONFIG_HAS_HW_I2C        (1 && PL_CONFIG_HAS_I2C) /* otherwise uses SW I2C */
 #define PL_CONFIG_HAS_SW_I2C        (!PL_CONFIG_HAS_HW_I2C && PL_CONFIG_HAS_I2C) /* otherwise uses SW I2C */
 

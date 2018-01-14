@@ -1,8 +1,9 @@
-/*
- * McuRTOShooks.h
+/**
+ * \file
+ * \brief FreeRTOS application hooks.
+ * \author Erich Styger, erich.styger@hslu.ch
  *
- *  Created on: 12.09.2017
- *      Author: Erich Styger
+ * This module implements the optional hooks for FreeRTOS.
  */
 
 #include "Platform.h"
