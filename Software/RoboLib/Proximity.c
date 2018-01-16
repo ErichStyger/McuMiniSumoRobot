@@ -17,7 +17,6 @@ static struct {
   int proximityAngle;
 } PROX_status;
 
-
 static const int PROX_Angles[] = {
 		      /* LL LM RM RR */
 	360,	  /* 0  0  0  0  */
@@ -47,7 +46,13 @@ static void CheckProx(bool isLeft, PROX_Bits *proxBits) {
 		if (PIN_IsPinLow(PIN_PROX_M)) {
 			*proxBits |= PROX_L_MIDDLE_BIT;
 		}
+    if (PIN_IsPinLow(PIN_PROX_R)) {
+      *proxBits |= PROX_L_RIGHT_BIT;
+    }
 	} else {
+    if (PIN_IsPinLow(PIN_PROX_L)) {
+      *proxBits |= PROX_R_LEFT_BIT;
+    }
 		if (PIN_IsPinLow(PIN_PROX_M)) {
 			*proxBits |= PROX_R_MIDDLE_BIT;
 		}
@@ -61,10 +66,11 @@ static bool PROX_CheckProximity(int *pAngle, uint8_t *pBits) {
 	uint8_t bits;
 
 	*pBits = 0;
+#if 1
 	PIN_SetHigh(PIN_PROX_IR_SELECT); /* HIGH: select left IR sender */
 	vTaskDelay(pdMS_TO_TICKS(5)); /* give the LED some time */
 	CheckProx(true, pBits);
-
+#endif
 	PIN_SetLow(PIN_PROX_IR_SELECT); /* LOW: select right IR sender */
 	vTaskDelay(pdMS_TO_TICKS(5)); /* give the LED some time */
 	CheckProx(false, pBits);
@@ -130,7 +136,7 @@ static void ProxTask(void *pvParameters) {
 	  PROX_status.proximityFound = PROX_CheckProximity(&angle, &bits);
 	  PROX_status.proximityAngle = angle;
 	  PROX_status.proximityBits = bits;
-	  vTaskDelay(pdMS_TO_TICKS(50));
+	  vTaskDelay(pdMS_TO_TICKS(100));
   }
 }
 

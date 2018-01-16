@@ -27,10 +27,12 @@ uint8_t PROX_ParseCommand(const unsigned char *cmd, bool *handled, const McuShel
 bool PROX_HasTarget(void);
 
 typedef enum {
-	PROX_L_LEFT_BIT=(1<<3),
-	PROX_L_MIDDLE_BIT=(1<<2),
-	PROX_R_MIDDLE_BIT=(1<<1),
-	PROX_R_RIGHT_BIT=(1<<0),
+	PROX_L_LEFT_BIT=(1<<5),    /*!< left IR on, and seen on left sensor */
+	PROX_L_MIDDLE_BIT=(1<<4),  /*!< left IR on, and seen on middle sensor */
+  PROX_L_RIGHT_BIT=(1<<3),   /*!< right IR on, and seen on right sensor? */
+  PROX_R_LEFT_BIT=(1<<2),    /*!< right IR on, and seen on left sensor? */
+	PROX_R_MIDDLE_BIT=(1<<1),  /*!< right IR on, and seen on middle sensor */
+	PROX_R_RIGHT_BIT=(1<<0),   /*!< right IR on, and seen on right sensor */
 } PROX_Bits;
 
 PROX_Bits PROX_GetProxBits(void);

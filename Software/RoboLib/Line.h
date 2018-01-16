@@ -33,6 +33,8 @@ void LINE_CalibrateStartStop(void);
 bool LINE_IsCalibrating(void);
 
 REF_SensorTimeType LINE_Get1kValue(unsigned int idx);
+REF_SensorTimeType LINE_GetMinValue(unsigned int idx);
+REF_SensorTimeType LINE_GetMaxValue(unsigned int idx);
 
 void LINE_StateMachine(void);
 

@@ -45,7 +45,7 @@
 #endif
 #define LCD_USE_ENCODER_AS_INPUT   (1 && PL_CONFIG_HAS_QUADRATURE)
 #if LCD_USE_ENCODER_AS_INPUT
-  #define LCD_ENCODER_COUNTER_MENU_DELTA   25  /* number of encoder counter ticks for a menu event */
+  #define LCD_ENCODER_COUNTER_MENU_DELTA   20  /* number of encoder counter ticks for a menu event */
 #endif
 
 typedef enum {
@@ -106,6 +106,9 @@ typedef enum {
 #endif
 #if PL_CONFIG_HAS_REFLECTANCE
     LCD_MENU_SCREEN_REFLECTANCE,
+#endif
+#if PL_CONFIG_HAS_LINE
+    LCD_MENU_SCREEN_LINE_CALIBRATE,
 #endif
 #if PL_CONFIG_HAS_PROXIMITY
     LCD_MENU_SCREEN_PROXIMITY,
@@ -245,6 +248,60 @@ static void ShowReflectanceScreen(void) {
 }
 #endif
 
+#if PL_CONFIG_HAS_LINE
+static void ShowLineCalibrateScreen(void) {
+  McuFontDisplay_PixelDim x, y;
+  uint8_t buf[24];
+  int i;
+
+  McuGDisplaySSD1306_Clear();
+  McuGDisplaySSD1306_DrawBox(0, 0, McuGDisplaySSD1306_GetWidth(), McuGDisplaySSD1306_GetHeight(), 1, McuGDisplaySSD1306_COLOR_BLUE);
+
+  x = 2; y = 2;
+  McuFontDisplay_WriteString((uint8_t*)"Calibrate over B/W\n", McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT());
+  buf[0] = '\0';
+  for(i=0;i<REF_NOF_SENSORS;i++) {
+    McuUtility_strcatNum16Hex(buf, sizeof(buf), REF_GetRawValue(i));
+    McuUtility_chcat(buf, sizeof(buf), ' ');
+  }
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"\n");
+  x = 2;
+#if LCDMENU_CONFIG_LCD_HEADER_HEIGHT>0
+  y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT;
+#endif
+  McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
+#if PL_CONFIG_HAS_LINE
+  buf[0] = '\0';
+  for(i=0;i<REF_NOF_SENSORS;i++) {
+    McuUtility_strcatNum16Hex(buf, sizeof(buf), LINE_GetMinValue(i));
+    McuUtility_chcat(buf, sizeof(buf), ' ');
+  }
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"\n");
+  x = 2;
+  McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
+
+  buf[0] = '\0';
+  for(i=0;i<REF_NOF_SENSORS;i++) {
+    McuUtility_strcatNum16Hex(buf, sizeof(buf), LINE_GetMaxValue(i));
+    McuUtility_chcat(buf, sizeof(buf), ' ');
+  }
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"\n");
+  x = 2;
+  McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
+
+  buf[0] = '\0';
+  for(i=0;i<REF_NOF_SENSORS;i++) {
+    McuUtility_strcatNum16Hex(buf, sizeof(buf), LINE_Get1kValue(i));
+    McuUtility_chcat(buf, sizeof(buf), ' ');
+  }
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"\n");
+  x = 2;
+  McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
+#endif
+  McuGDisplaySSD1306_UpdateFull();
+}
+#endif
+
 #if PL_CONFIG_HAS_PROXIMITY
 static void ShowProximityScreen(void) {
   McuFontDisplay_PixelDim x, y;
@@ -281,6 +338,18 @@ static void ShowProximityScreen(void) {
   }
   x += LCD_PROX_BOX_BORDER+LCD_PROX_BOX_WIDTH;
   if (prox&PROX_L_MIDDLE_BIT) {
+    McuGDisplaySSD1306_DrawFilledBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, McuGDisplaySSD1306_COLOR_BLUE);
+  } else {
+    McuGDisplaySSD1306_DrawBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, 1, McuGDisplaySSD1306_COLOR_BLUE);
+  }
+  x += LCD_PROX_BOX_BORDER+LCD_PROX_BOX_WIDTH;
+  if (prox&PROX_L_RIGHT_BIT) {
+    McuGDisplaySSD1306_DrawFilledBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, McuGDisplaySSD1306_COLOR_BLUE);
+  } else {
+    McuGDisplaySSD1306_DrawBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, 1, McuGDisplaySSD1306_COLOR_BLUE);
+  }
+  x += LCD_PROX_BOX_BORDER+2*LCD_PROX_BOX_WIDTH;
+  if (prox&PROX_R_LEFT_BIT) {
     McuGDisplaySSD1306_DrawFilledBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, McuGDisplaySSD1306_COLOR_BLUE);
   } else {
     McuGDisplaySSD1306_DrawBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, 1, McuGDisplaySSD1306_COLOR_BLUE);
@@ -389,13 +458,23 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
         LCD_CurrentScreen = LCD_MENU_SCREEN_SUMO;
     }
 #endif
+#if PL_CONFIG_HAS_LINE
+    if (item->id==LCD_MENU_ID_ROBOT_CALIBRATE) {
+        flags |= LCDMENU_STATUS_FLAGS_HANDLED;
+      #if LCD_USE_ENCODER_AS_INPUT
+        LCD_useEncoderForMenuNavigation = FALSE;
+      #endif
+        ShowLineCalibrateScreen();
+        LCD_CurrentScreen = LCD_MENU_SCREEN_LINE_CALIBRATE;
+    }
+#endif
   } else if (event==LCDMENU_EVENT_GET_TEXT && dataP!=NULL) {
 #if PL_CONFIG_HAS_LINE
     if (item->id==LCD_MENU_ID_ROBOT_CALIBRATE) {
       if (LINE_IsCalibrating()) {
-        *dataP = "Stop Calibrate";
+        *dataP = "Stop Line Calibration";
       } else {
-        *dataP = "Start Calibrate";
+        *dataP = "Start Line Calibration";
       }
       flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;
     }
@@ -468,9 +547,17 @@ static const LCDMenu_MenuItem menus[] =
 
 static void OnLCDExitScreen(void) {
 #if PL_CONFIG_HAS_SUMO
-  if (LCD_CurrentScreen==LCD_MENU_SCREEN_SUMO) {
+  if (LCD_CurrentScreen==LCD_MENU_SCREEN_SUMO) { /* if leaving Sumo screen: stop running sumo */
     SUMO_StopSumo();
-    vTaskDelay(pdMS_TO_TICKS(50)); /* give time to update sumo status */
+    vTaskDelay(pdMS_TO_TICKS(50)); /* give time to update status */
+  }
+#endif
+#if PL_CONFIG_HAS_SUMO
+  if (LCD_CurrentScreen==LCD_MENU_SCREEN_LINE_CALIBRATE) { /* if leaving calibration screen: stop calibration */
+    if (LINE_IsCalibrating()) {
+      LINE_CalibrateStartStop();
+    }
+    vTaskDelay(pdMS_TO_TICKS(50)); /* give time to update status */
   }
 #endif
   LCD_CurrentScreen = LCD_MENU_SCREEN_NONE;
@@ -569,6 +656,11 @@ static void LCD_Task(void *param) {
 #if PL_CONFIG_HAS_SUMO
     if (LCD_CurrentScreen==LCD_MENU_SCREEN_SUMO) {
       ShowSumoScreen();
+    }
+#endif
+#if PL_CONFIG_HAS_LINE
+    if (LCD_CurrentScreen==LCD_MENU_SCREEN_LINE_CALIBRATE) {
+      ShowLineCalibrateScreen();
     }
 #endif
 #endif /* PL_CONFIG_HAS_LCD_MENU */

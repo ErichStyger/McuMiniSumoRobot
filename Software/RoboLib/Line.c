@@ -11,7 +11,7 @@
 #include "Reflectance.h"
 
 #define LINE_USE_WHITE_LINE     (0)
-#define LINE_MIN_NOISE_VAL      0x80   /* values below this are not added to the weighted sum */
+#define LINE_MIN_NOISE_VAL      0x20   /* values below this are not added to the weighted sum */
 
 static uint16_t LINE_linePos = 0;
 static xSemaphoreHandle LINE_StartStopCalibSem = NULL;
@@ -31,14 +31,27 @@ static volatile lineStateType lineState = LINE_STATE_INIT;
 typedef struct {
   REF_SensorTimeType minVal[REF_NOF_SENSORS];
   REF_SensorTimeType maxVal[REF_NOF_SENSORS];
-} REF_SensorMinMax;
+  REF_SensorTimeType oneKVal[REF_NOF_SENSORS]; /* 0 means white/min value, 1000 means black/max value */
+} REF_SensorVal_t;
 
-static REF_SensorMinMax   SensorMinMax; /* values from calibration */
-static REF_SensorTimeType Sensor1kValues[REF_NOF_SENSORS]; /* 0 means white/min value, 1000 means black/max value */
+static REF_SensorVal_t   SensorValues; /* values from calibration */
 
 REF_SensorTimeType LINE_Get1kValue(unsigned int idx) {
   if (idx<REF_NOF_SENSORS) {
-    return Sensor1kValues[idx];
+    return SensorValues.oneKVal[idx];
+  }
+  return 0; /* error case */
+}
+
+REF_SensorTimeType LINE_GetMinValue(unsigned int idx) {
+  if (idx<REF_NOF_SENSORS) {
+    return SensorValues.minVal[idx];
+  }
+  return 0; /* error case */
+}
+REF_SensorTimeType LINE_GetMaxValue(unsigned int idx) {
+  if (idx<REF_NOF_SENSORS) {
+    return SensorValues.maxVal[idx];
   }
   return 0; /* error case */
 }
@@ -76,7 +89,7 @@ static uint16_t ReadLine(bool white_line) {
   sum = 0;
   mul = 1000;
   for(i=0;i<REF_NOF_SENSORS;i++) {
-    value = Sensor1kValues[i];
+    value = SensorValues.oneKVal[i];
     if(white_line) {
       value = 1000-value;
     }
@@ -96,11 +109,11 @@ static void MeasureRawMinMax(void) {
 
  for(i=0;i<REF_NOF_SENSORS;i++) {
    val = REF_GetRawValue(i);
-   if (val < SensorMinMax.minVal[i]) {
-     SensorMinMax.minVal[i] = val;
+   if (val < SensorValues.minVal[i]) {
+     SensorValues.minVal[i] = val;
    }
-   if (val > SensorMinMax.maxVal[i]) {
-     SensorMinMax.maxVal[i] = val;
+   if (val > SensorValues.maxVal[i]) {
+     SensorValues.maxVal[i] = val;
    }
  }
 }
@@ -111,16 +124,16 @@ static void Calc1kValues(void) {
 
  for(i=0;i<REF_NOF_SENSORS;i++) {
    x = 0;
-   denominator = SensorMinMax.maxVal[i]-SensorMinMax.minVal[i];
+   denominator = SensorValues.maxVal[i]-SensorValues.minVal[i];
    if (denominator!=0) {
-     x = (((int32_t)REF_GetRawValue(i)-SensorMinMax.minVal[i])*1000)/denominator;
+     x = (((int32_t)REF_GetRawValue(i)-SensorValues.minVal[i])*1000)/denominator;
    }
    if (x<0) {
      x = 0;
    } else if (x>1000) {
      x = 1000;
    }
-   Sensor1kValues[i] = x;
+   SensorValues.oneKVal[i] = x;
  }
 }
 
@@ -176,15 +189,16 @@ void LINE_StateMachine(void) {
     case LINE_STATE_START_CALIBRATION:
       McuShell_SendStr((unsigned char*)"starting calibration...\r\n", McuShell_GetStdio()->stdOut);
       for(i=0;i<REF_NOF_SENSORS;i++) {
-        SensorMinMax.minVal[i] = REF_MAX_SENSOR_VALUE;
-        SensorMinMax.maxVal[i] = 0;
-        Sensor1kValues[i] = 0;
+        SensorValues.minVal[i] = REF_MAX_SENSOR_VALUE;
+        SensorValues.maxVal[i] = 0;
+        SensorValues.oneKVal[i] = 0;
       }
       lineState = LINE_STATE_CALIBRATING;
       break;
 
     case LINE_STATE_CALIBRATING:
       MeasureRawMinMax();
+      LINE_CalcLineValue();
       if (xSemaphoreTake(LINE_StartStopCalibSem, 0)==pdTRUE) {
         lineState = LINE_STATE_STOP_CALIBRATION;
       }
@@ -246,7 +260,7 @@ static uint8_t PrintStatus(const McuShell_StdIOType *io) {
     } else {
       McuShell_SendStr((unsigned char*)" 0x", io->stdOut);
     }
-    buf[0] = '\0'; McuUtility_strcatNum16Hex(buf, sizeof(buf), SensorMinMax.minVal[i]);
+    buf[0] = '\0'; McuUtility_strcatNum16Hex(buf, sizeof(buf), SensorValues.minVal[i]);
     McuShell_SendStr(buf, io->stdOut);
   }
   McuShell_SendStr((unsigned char*)"\r\n", io->stdOut);
@@ -257,7 +271,7 @@ static uint8_t PrintStatus(const McuShell_StdIOType *io) {
     } else {
       McuShell_SendStr((unsigned char*)" 0x", io->stdOut);
     }
-    buf[0] = '\0'; McuUtility_strcatNum16Hex(buf, sizeof(buf), SensorMinMax.maxVal[i]);
+    buf[0] = '\0'; McuUtility_strcatNum16Hex(buf, sizeof(buf), SensorValues.maxVal[i]);
     McuShell_SendStr(buf, io->stdOut);
   }
   McuShell_SendStr((unsigned char*)"\r\n", io->stdOut);
@@ -268,7 +282,7 @@ static uint8_t PrintStatus(const McuShell_StdIOType *io) {
     } else {
       McuShell_SendStr((unsigned char*)" 0x", io->stdOut);
     }
-    buf[0] = '\0'; McuUtility_strcatNum16Hex(buf, sizeof(buf), Sensor1kValues[i]);
+    buf[0] = '\0'; McuUtility_strcatNum16Hex(buf, sizeof(buf), SensorValues.oneKVal[i]);
     McuShell_SendStr(buf, io->stdOut);
   }
   McuShell_SendStr((unsigned char*)"\r\n", io->stdOut);
