@@ -8,3 +8,5 @@ Open:
 - line following
 - UART
 - option: haptic feedback with wheels
+- Use UART for one extra line sensor and to turn off IR LEDs
+- header for LCD, pull-ups

@@ -32,7 +32,9 @@
 #if PL_CONFIG_HAS_SUMO
   #include "Sumo.h"
 #endif
-
+#if PL_CONFIG_HAS_PID
+  #include "Pid.h"
+#endif
 
 #if PL_CONFIG_USE_FREERTOS
 
@@ -98,10 +100,75 @@ static void AppTask(void *pvParameters) {
   }
 }
 
+#if PL_CONFIG_HAS_PID
+static void ConfigurePID(void) {
+  uint8_t res;
+  PID_Config *config;
+
+  res = PID_GetPIDConfig(PID_CONFIG_POS_LEFT, &config);
+  if (res==ERR_OK) {
+    config->pFactor100 = 100;
+    config->iFactor100 = 5;
+    config->dFactor100 = 0;
+    config->iAntiWindup = 200;
+    config->maxSpeedPercent = 40;
+    config->lastError = 0;
+    config->integral = 0;
+  }
+  res = PID_GetPIDConfig(PID_CONFIG_POS_RIGHT, &config);
+  if (res==ERR_OK) {
+    config->pFactor100 = 100;
+    config->iFactor100 = 5;
+    config->dFactor100 = 0;
+    config->iAntiWindup = 200;
+    config->maxSpeedPercent = 40;
+    config->lastError = 0;
+    config->integral = 0;
+  }
+#if PL_CONFIG_HAS_SPEED_PID
+  res = PID_GetPIDConfig(PID_CONFIG_SPEED_LEFT, &config);
+  if (res==ERR_OK) {
+    config->pFactor100 = 2000;
+    config->iFactor100 = 80;
+    config->dFactor100 = 0;
+    config->iAntiWindup = 120000;
+    config->maxSpeedPercent = 100;
+    config->lastError = 0;
+    config->integral = 0;
+  }
+  res = PID_GetPIDConfig(PID_CONFIG_SPEED_RIGHT, &config);
+  if (res==ERR_OK) {
+    config->pFactor100 = 2000;
+    config->iFactor100 = 80;
+    config->dFactor100 = 0;
+    config->iAntiWindup = 120000;
+    config->maxSpeedPercent = 100;
+    config->lastError = 0;
+    config->integral = 0;
+  }
+#endif
+#if PL_CONFIG_HAS_LINE_PID
+  res = PID_GetPIDConfig(PID_CONFIG_LINE_FW, &config);
+  if (res==ERR_OK) {
+    config->pFactor100 = 5500;
+    config->iFactor100 = 15;
+    config->dFactor100 = 100;
+    config->iAntiWindup = 100000;
+    config->maxSpeedPercent = 50;
+    config->lastError = 0;
+    config->integral = 0;
+  }
+#endif
+}
+#endif
+
 void APP_Run(void) {
   PL_Init();
 #if PL_CONFIG_HAS_SUMO
   SUMO_Init();
+#endif
+#if PL_CONFIG_HAS_PID
+  ConfigurePID();
 #endif
   if (xTaskCreate(
 		AppTask,  /* pointer to the task */

@@ -19,9 +19,9 @@
 #include "Reflectance.h"
 #include "Event.h"
 
-#define SUMO_DRIVE_SPEED   (1000)
-#define SUMO_CHASE_SPEED   (2000)
-#define SUMO_USE_PROXY     (0 && PL_CONFIG_HAS_PROXIMITY)
+#define SUMO_DRIVE_SPEED   (800)
+#define SUMO_CHASE_SPEED   (1400)
+#define SUMO_USE_PROXY     (1 && PL_CONFIG_HAS_PROXIMITY)
 
 /* direct task notification bits */
 #define SUMO_START_SUMO (1<<0)  /* start sumo mode */

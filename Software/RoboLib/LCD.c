@@ -303,33 +303,13 @@ static void ShowLineCalibrateScreen(void) {
 #endif
 
 #if PL_CONFIG_HAS_PROXIMITY
-static void ShowProximityScreen(void) {
-  McuFontDisplay_PixelDim x, y;
-  uint8_t buf[24];
-  int i;
-  PROX_Bits prox;
-  McuGDisplaySSD1306_Clear();
-  McuGDisplaySSD1306_DrawBox(0, 0, McuGDisplaySSD1306_GetWidth(), McuGDisplaySSD1306_GetHeight(), 1, McuGDisplaySSD1306_COLOR_BLUE);
-
-  x = 2; y = 2;
-  McuFontDisplay_WriteString((uint8_t*)"Proximity:\n", McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT());
-  if (PROX_HasTarget()) {
-    McuUtility_strcpy(buf, sizeof(buf), (uint8_t*)"Target: yes, at ");
-    McuUtility_strcatNum32s(buf, sizeof(buf), PROX_GetTargetAngle());
-    McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"°\n");
-  } else {
-    McuUtility_strcpy(buf, sizeof(buf), (uint8_t*)"Target: no\n");
-  }
-  x = 2;
-#if LCDMENU_CONFIG_LCD_HEADER_HEIGHT>0
-  y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT;
-#endif
-  McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
-
-  prox = PROX_GetProxBits();
+static void ShowProxDataGraph(McuFontDisplay_PixelDim x, McuFontDisplay_PixelDim y) {
   #define LCD_PROX_BOX_HEIGHT   (8)
   #define LCD_PROX_BOX_WIDTH    (10)
   #define LCD_PROX_BOX_BORDER   (2)
+  PROX_Bits prox;
+
+  prox = PROX_GetProxBits();
 
   if (prox&PROX_L_LEFT_BIT) {
     McuGDisplaySSD1306_DrawFilledBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, McuGDisplaySSD1306_COLOR_BLUE);
@@ -366,6 +346,31 @@ static void ShowProximityScreen(void) {
   } else {
     McuGDisplaySSD1306_DrawBox(x, y, LCD_PROX_BOX_WIDTH, LCD_PROX_BOX_HEIGHT, 1, McuGDisplaySSD1306_COLOR_BLUE);
   }
+}
+
+static void ShowProximityScreen(void) {
+  McuFontDisplay_PixelDim x, y;
+  uint8_t buf[24];
+  int i;
+  McuGDisplaySSD1306_Clear();
+  McuGDisplaySSD1306_DrawBox(0, 0, McuGDisplaySSD1306_GetWidth(), McuGDisplaySSD1306_GetHeight(), 1, McuGDisplaySSD1306_COLOR_BLUE);
+
+  x = 2; y = 2;
+  McuFontDisplay_WriteString((uint8_t*)"Proximity:\n", McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT());
+  if (PROX_HasTarget()) {
+    McuUtility_strcpy(buf, sizeof(buf), (uint8_t*)"Target: yes, at ");
+    McuUtility_strcatNum32s(buf, sizeof(buf), PROX_GetTargetAngle());
+    McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"°\n");
+  } else {
+    McuUtility_strcpy(buf, sizeof(buf), (uint8_t*)"Target: no\n");
+  }
+  x = 2;
+#if LCDMENU_CONFIG_LCD_HEADER_HEIGHT>0
+  y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT;
+#endif
+  McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
+
+  ShowProxDataGraph(x, y);
 
   McuGDisplaySSD1306_UpdateFull();
 }
@@ -396,6 +401,10 @@ static void ShowSumoScreen(void) {
   } else if (SUMO_IsDoingSumo()) {
     McuFontDisplay_WriteString((uint8_t*)"Running Sumo....\nPress button to abort.", McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
   }
+#if PL_CONFIG_HAS_PROXIMITY
+  x = 2;
+  ShowProxDataGraph(x, y);
+#endif
   McuGDisplaySSD1306_UpdateFull();
 }
 #endif
@@ -442,6 +451,9 @@ static LCDMenu_StatusFlags RobotMenuHandler(const struct LCDMenu_MenuItem_ *item
 #endif
 #if PL_CONFIG_HAS_LINE
     if (item->id==LCD_MENU_ID_ROBOT_CALIBRATE) {
+    #if LCD_USE_ENCODER_AS_INPUT
+      LCD_useEncoderForMenuNavigation = FALSE;
+    #endif
       LINE_CalibrateStartStop();
       vTaskDelay(pdMS_TO_TICKS(100)); /* wait some time to get it started, otherwise menu won't refresh properly */
       flags |= LCDMENU_STATUS_FLAGS_HANDLED|LCDMENU_STATUS_FLAGS_UPDATE_VIEW;

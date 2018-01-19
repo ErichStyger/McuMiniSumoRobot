@@ -612,119 +612,33 @@ void PID_Deinit(void) {
 
 void PID_Init(void) {
 #if PL_CONFIG_HAS_LINE_PID
-#if PL_IS_ZUMO_ROBOT && PL_IS_MOTOR_1_100
-  lineFwConfig.pFactor100 = 5500;
-  lineFwConfig.iFactor100 = 15;
-  lineFwConfig.dFactor100 = 100;
-  lineFwConfig.iAntiWindup = 100000;
-  lineFwConfig.maxSpeedPercent = 100;
+  lineFwConfig.pFactor100 = 0;
+  lineFwConfig.iFactor100 = 0;
+  lineFwConfig.dFactor100 = 0;
+  lineFwConfig.iAntiWindup = 0;
+  lineFwConfig.maxSpeedPercent = 0;
   lineFwConfig.lastError = 0;
   lineFwConfig.integral = 0;
-#elif PL_IS_ZUMO_ROBOT
-  lineFwConfig.pFactor100 = 5500;
-  lineFwConfig.iFactor100 = 15;
-  lineFwConfig.dFactor100 = 100;
-  lineFwConfig.iAntiWindup = 100000;
-  lineFwConfig.maxSpeedPercent = 60;
   lineFwConfig.lastError = 0;
   lineFwConfig.integral = 0;
-#elif PL_IS_ROUND_ROBOT
-  lineFwConfig.pFactor100 = 200;
-  lineFwConfig.iFactor100 = 1;
-  lineFwConfig.dFactor100 = 50000;
-  lineFwConfig.iAntiWindup = 20000;
-  lineFwConfig.maxSpeedPercent = 15;
-  lineFwConfig.lastError = 0;
-  lineFwConfig.integral = 0;
-#elif PL_IS_TRACK_ROBOT
-  lineFwConfig.pFactor100 = 400;
-  lineFwConfig.iFactor100 = 1;
-  lineFwConfig.dFactor100 = 50000;
-  lineFwConfig.iAntiWindup = 20000;
-  lineFwConfig.maxSpeedPercent = 17;
-  lineFwConfig.lastError = 0;
-  lineFwConfig.integral = 0;
-#elif PL_IS_INTRO_ZUMO_ROBOT
-  lineFwConfig.pFactor100 = 5500;
-  lineFwConfig.iFactor100 = 15;
-  lineFwConfig.dFactor100 = 100;
-  lineFwConfig.iAntiWindup = 100000;
-  lineFwConfig.maxSpeedPercent = 15;
-  lineFwConfig.lastError = 0;
-  lineFwConfig.integral = 0;
-#elif PL_IS_INTRO_ZUMO_K22 && PL_HAS_LIPO
-  lineFwConfig.pFactor100 = 2000;
-  lineFwConfig.iFactor100 = 15;
-  lineFwConfig.dFactor100 = 100;
-  lineFwConfig.iAntiWindup = 100000;
-  lineFwConfig.maxSpeedPercent = 15;
-  lineFwConfig.lastError = 0;
-  lineFwConfig.integral = 0;
-#elif PL_IS_INTRO_ZUMO_ROBOT2 || PL_IS_INTRO_ZUMO_K22
-  lineFwConfig.pFactor100 = 5500;
-  lineFwConfig.iFactor100 = 15;
-  lineFwConfig.dFactor100 = 100;
-  lineFwConfig.iAntiWindup = 100000;
-  lineFwConfig.maxSpeedPercent = 50;
-  lineFwConfig.lastError = 0;
-  lineFwConfig.integral = 0;
-#elif PL_CONFIG_IS_DAC_ROBOT
-  lineFwConfig.pFactor100 = 5500;
-  lineFwConfig.iFactor100 = 15;
-  lineFwConfig.dFactor100 = 100;
-  lineFwConfig.iAntiWindup = 100000;
-  lineFwConfig.maxSpeedPercent = 50;
-  lineFwConfig.lastError = 0;
-  lineFwConfig.integral = 0;
-#else
-  #error "unknown configuration!"
-#endif
 #if PL_CONFIG_GO_DEADEND_BW
   lineBwConfig.param = 0;
-  lineBwConfig.pFactor100 = 1000;
+  lineBwConfig.pFactor100 = 0;
   lineBwConfig.iFactor100 = 0;
   lineBwConfig.dFactor100 = 0;
-  lineBwConfig.iAntiWindup = 100000;
-  lineBwConfig.maxSpeedPercent = 20;
+  lineBwConfig.iAntiWindup = 0;
+  lineBwConfig.maxSpeedPercent = 0;
   lineBwConfig.lastError = 0;
   lineBwConfig.integral = 0;
 #endif
 #endif /* PL_CONFIG_HAS_LINE_PID */
   
 #if PL_CONFIG_HAS_POS_PID
-#if PL_CONFIG_IS_DAC_ROBOT
-  posLeftConfig.pFactor100 = 100;
-  posLeftConfig.iFactor100 = 5;
+  posLeftConfig.pFactor100 = 0;
+  posLeftConfig.iFactor100 = 0;
   posLeftConfig.dFactor100 = 0;
-  posLeftConfig.iAntiWindup = 200;
-  posLeftConfig.maxSpeedPercent = 40;
-#elif PL_CONGIG_DO_SUMO && PL_SLOWER_SPEED
-  posLeftConfig.pFactor100 = 1000;
-  posLeftConfig.iFactor100 = 1;
-  posLeftConfig.dFactor100 = 50;
-  posLeftConfig.iAntiWindup = 200;
-  posLeftConfig.maxSpeedPercent = 30;
-#elif PL_CONGIG_DO_SUMO /* sumo, high speed */
-  posLeftConfig.pFactor100 = 1000;
-  posLeftConfig.iFactor100 = 1;
-  posLeftConfig.dFactor100 = 50;
-  posLeftConfig.iAntiWindup = 200;
-  posLeftConfig.maxSpeedPercent = 100;
-#elif (PL_DO_LINE_FOLLOWING || PL_DO_LINE_MAZE) && PL_SLOWER_SPEED /* line/maze, high speed */
-  posLeftConfig.pFactor100 = 1500;
-  posLeftConfig.iFactor100 = 2;
-  posLeftConfig.dFactor100 = 50;
-  posLeftConfig.iAntiWindup = 200;
-  posLeftConfig.maxSpeedPercent = 40;
-#elif (PL_DO_LINE_FOLLOWING || PL_DO_LINE_MAZE) /* line/maze, high speed */
-  posLeftConfig.pFactor100 = 1000;
-  posLeftConfig.iFactor100 = 2;
-  posLeftConfig.dFactor100 = 50;
-  posLeftConfig.iAntiWindup = 200;
-  posLeftConfig.maxSpeedPercent = 40;
-#else
-  #error "check configuration"
-#endif
+  posLeftConfig.iAntiWindup = 0;
+  posLeftConfig.maxSpeedPercent = 0;
   posLeftConfig.lastError = 0;
   posLeftConfig.integral = 0;
   posRightConfig.pFactor100 = posLeftConfig.pFactor100;
@@ -736,42 +650,11 @@ void PID_Init(void) {
   posRightConfig.integral = posLeftConfig.integral;
 #endif
 #if PL_CONFIG_HAS_SPEED_PID
-  speedLeftConfig.pFactor100 = 2000;
-  speedLeftConfig.iFactor100 = 20;
-  speedLeftConfig.dFactor100 = 10;
-  speedLeftConfig.iAntiWindup = 40000;
-  #if PL_SLOWER_SPEED
-  speedLeftConfig.maxSpeedPercent = 30;
-  #else
-  speedLeftConfig.maxSpeedPercent = 100;
-  #endif
-#if PL_CONFIG_IS_DAC_ROBOT
-  speedLeftConfig.pFactor100 = 2000;
-  speedLeftConfig.iFactor100 = 80;
+  speedLeftConfig.pFactor100 = 0;
+  speedLeftConfig.iFactor100 = 0;
   speedLeftConfig.dFactor100 = 0;
-  speedLeftConfig.iAntiWindup = 120000;
-  speedLeftConfig.maxSpeedPercent = 100;
-#elif PL_IS_INTRO_ZUMO_K22
-  speedLeftConfig.pFactor100 = 2000;
-  speedLeftConfig.iFactor100 = 80;
-  speedLeftConfig.dFactor100 = 0;
-  speedLeftConfig.iAntiWindup = 120000;
-  #if PL_SLOWER_SPEED
-  speedLeftConfig.maxSpeedPercent = 50;
-  #else
-  speedLeftConfig.maxSpeedPercent = 100;
-  #endif
-#else
-  speedLeftConfig.pFactor100 = 15000;
-  speedLeftConfig.iFactor100 = 500;
-  speedLeftConfig.dFactor100 = 100;
-  speedLeftConfig.iAntiWindup = 15000;
-  #if PL_SLOWER_SPEED
-  speedLeftConfig.maxSpeedPercent = 30;
-  #else
-  speedLeftConfig.maxSpeedPercent = 50;
-  #endif
-#endif
+  speedLeftConfig.iAntiWindup = 0;
+  speedLeftConfig.maxSpeedPercent = 0;
   speedLeftConfig.lastError = 0;
   speedLeftConfig.integral = 0;
   speedRightConfig.pFactor100 = speedLeftConfig.pFactor100;

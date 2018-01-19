@@ -17,24 +17,24 @@ static struct {
   int proximityAngle;
 } PROX_status;
 
-static const int PROX_Angles[] = {
-		      /* LL LM RM RR */
-	360,	  /* 0  0  0  0  */
-	 90,	  /* 0  0  0  1  */
-	 10,	  /* 0  0  1  0  */
-	 45,	  /* 0  0  1  1  */
-	-10,	  /* 0  1  0  0  */
-	  0,      /* 0  1  0  1  */
-	  0,      /* 0  1  1  0  */
-	 30,      /* 0  1  1  1  */
-	-90,      /* 1  0  0  0  */
-	360,      /* 1  0  0  1  */
-	-30,      /* 1  0  1  0  */
-	 45,      /* 1  0  1  1  */
-	-45,      /* 1  1  0  0  */
-	-45,      /* 1  1  0  1  */
-	-30,      /* 1  1  1  0  */
-	  0,      /* 1  1  1  1  */
+static const int16_t PROX_Angles[] = {
+		      /* LL LM LR RL RM RR */
+	360,	  /* 0  0  0  0  0  0  */
+	 90,	  /* 0  0  0  0  0  1  */
+	 10,	  /* 0  0  0  0  1  0  */
+	 45,	  /* 0  0  0  0  1  1  */
+	-10,	  /* 0  1  0  0  0  0  */
+	  0,    /* 0  1  0  0  0  1  */
+	  0,    /* 0  1  0  0  1  0  */
+	 30,    /* 0  1  0  0  1  1  */
+	-90,    /* 1  0  0  0  0  0  */
+	360,    /* 1  0  0  0  0  1  */
+	-30,    /* 1  0  0  0  1  0  */
+	 45,    /* 1  0  0  0  1  1  */
+	-45,    /* 1  1  0  0  0  0  */
+	-45,    /* 1  1  0  0  0  1  */
+	-30,    /* 1  1  0  0  1  0  */
+	  0,    /* 1  1  0  0  1  1  */
 };
 
 static void CheckProx(bool isLeft, PROX_Bits *proxBits) {
@@ -75,6 +75,9 @@ static bool PROX_CheckProximity(int *pAngle, uint8_t *pBits) {
 	vTaskDelay(pdMS_TO_TICKS(5)); /* give the LED some time */
 	CheckProx(false, pBits);
 	bits = *pBits;
+#if 1 /* ignore the 'strange' bits */
+	bits = ((bits&(PROX_L_LEFT_BIT|PROX_L_MIDDLE_BIT))>>2) | (bits&(PROX_R_MIDDLE_BIT|PROX_R_RIGHT_BIT));
+#endif
 	if (bits<sizeof(PROX_Angles)/sizeof(PROX_Angles[0])) {
 		*pAngle = PROX_Angles[bits];
 		return (*pAngle!=360);

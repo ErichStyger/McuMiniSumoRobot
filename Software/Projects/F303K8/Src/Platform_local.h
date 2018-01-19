@@ -59,7 +59,7 @@
 #define PL_CONFIG_HAS_LINE_MAZE     (0 && PL_CONFIG_HAS_LINE_FOLLOW)
 #define PL_CONFIG_HAS_SUMO          (1 && PL_CONFIG_HAS_DRIVE && PL_CONFIG_HAS_TURN)
 
-#define PL_APP_LINE_FOLLOWING 0
+#define PL_APP_LINE_FOLLOWING 1
 #define PL_APP_LINE_MAZE      0
 #define PL_DO_MINT            0
 #define PL_IS_ZUMO_ROBOT      0
