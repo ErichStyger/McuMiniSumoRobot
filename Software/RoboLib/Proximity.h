@@ -37,6 +37,12 @@ typedef enum {
 
 PROX_Bits PROX_GetProxBits(void);
 
+#define PROX_NOF_SENSORS   (3)
+
+/* return number of brightness levels for each sensor */
+uint8_t PROX_GetNofWithLeftLeds(uint8_t sensorIdx);
+uint8_t PROX_GetNofWithRightLeds(uint8_t sensorIdx);
+
 /*!
  * \brief checks for the opponent
  * \return angle where the opponent is seen in degrees (e.g. -180 means left, 90 on the right side, 0 in front,

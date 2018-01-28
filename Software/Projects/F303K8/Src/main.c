@@ -10,8 +10,6 @@
 #include "main.h"
 #include "Application.h"
 
-#include "string.h"
-
 /*!
  * \brief main application entry point
  * \return error code, 0 for no error

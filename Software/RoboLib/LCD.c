@@ -39,9 +39,9 @@
 
 #define GET_FONT()          McuFontHelv08Normal_GetFont()
 #if 0
-#define GET_FONT_FIXED()    McuFontCour08Normal_GetFont()
+  #define GET_FONT_FIXED()    McuFontCour08Normal_GetFont()
 #else /* save about 5kB FLASH */
-#define GET_FONT_FIXED()    GET_FONT()
+  #define GET_FONT_FIXED()    GET_FONT()
 #endif
 #define LCD_USE_ENCODER_AS_INPUT   (1 && PL_CONFIG_HAS_QUADRATURE)
 #if LCD_USE_ENCODER_AS_INPUT
@@ -350,7 +350,7 @@ static void ShowProxDataGraph(McuFontDisplay_PixelDim x, McuFontDisplay_PixelDim
 
 static void ShowProximityScreen(void) {
   McuFontDisplay_PixelDim x, y;
-  uint8_t buf[24];
+  uint8_t buf[32];
   int i;
   McuGDisplaySSD1306_Clear();
   McuGDisplaySSD1306_DrawBox(0, 0, McuGDisplaySSD1306_GetWidth(), McuGDisplaySSD1306_GetHeight(), 1, McuGDisplaySSD1306_COLOR_BLUE);
@@ -368,6 +368,22 @@ static void ShowProximityScreen(void) {
 #if LCDMENU_CONFIG_LCD_HEADER_HEIGHT>0
   y = LCDMENU_CONFIG_LCD_HEADER_HEIGHT;
 #endif
+  McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
+
+  McuUtility_strcpy(buf, sizeof(buf), (uint8_t*)"L#: ");
+  McuUtility_strcatNum8u(buf, sizeof(buf), PROX_GetNofWithLeftLeds(0));
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)", ");
+  McuUtility_strcatNum8u(buf, sizeof(buf), PROX_GetNofWithLeftLeds(1));
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)", ");
+  McuUtility_strcatNum8u(buf, sizeof(buf), PROX_GetNofWithLeftLeds(2));
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)" R#: ");
+  McuUtility_strcatNum8u(buf, sizeof(buf), PROX_GetNofWithRightLeds(0));
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)", ");
+  McuUtility_strcatNum8u(buf, sizeof(buf), PROX_GetNofWithRightLeds(1));
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)", ");
+  McuUtility_strcatNum8u(buf, sizeof(buf), PROX_GetNofWithRightLeds(2));
+  McuUtility_strcat(buf, sizeof(buf), (uint8_t*)"\n");
+  x = 2;
   McuFontDisplay_WriteString(buf, McuGDisplaySSD1306_COLOR_BLUE, &x, &y, GET_FONT_FIXED());
 
   ShowProxDataGraph(x, y);

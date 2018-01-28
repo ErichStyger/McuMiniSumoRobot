@@ -11,10 +11,15 @@
 #include "McuUtility.h"
 #include "Pin.h"
 
+#define PROX_NOF_LEVELS    5
+static const int PROX_durationBurstUs[PROX_NOF_LEVELS] = {50, 100, 200, 350, 500};
+
 static struct {
   bool proximityFound;
   PROX_Bits proximityBits;
   int proximityAngle;
+  uint8_t countsLeft[PROX_NOF_SENSORS];
+  uint8_t countsRight[PROX_NOF_SENSORS];
 } PROX_status;
 
 static const int16_t PROX_Angles[] = {
@@ -62,8 +67,61 @@ static void CheckProx(bool isLeft, PROX_Bits *proxBits) {
 	}
 }
 
+uint8_t PROX_GetNofWithLeftLeds(uint8_t sensorIdx) {
+  if (sensorIdx>=PROX_NOF_SENSORS) {
+    return 0; /* error */
+  }
+  return PROX_status.countsLeft[sensorIdx];
+}
+
+uint8_t PROX_GetNofWithRightLeds(uint8_t sensorIdx) {
+  if (sensorIdx>=PROX_NOF_SENSORS) {
+    return 0; /* error */
+  }
+  return PROX_status.countsRight[sensorIdx];
+}
+
 static bool PROX_CheckProximity(int *pAngle, uint8_t *pBits) {
 	uint8_t bits;
+  int i;
+
+  for(i=0;i<PROX_NOF_SENSORS;i++) { /* init */
+    PROX_status.countsLeft[i] = 0;
+    PROX_status.countsRight[i] = 0;
+  }
+
+  /* check left side */
+  for(i=0;i<PROX_NOF_LEVELS;i++) {
+    PIN_SetHigh(PIN_PROX_IR_SELECT); /* HIGH: select left IR sender */
+    McuWait_Waitus(PROX_durationBurstUs[i]);
+    if (PIN_IsPinLow(PIN_PROX_L)) {
+      PROX_status.countsLeft[0]++;
+    }
+    if (PIN_IsPinLow(PIN_PROX_M)) {
+      PROX_status.countsLeft[1]++;
+    }
+    if (PIN_IsPinLow(PIN_PROX_R)) {
+      PROX_status.countsLeft[2]++;
+    }
+    PIN_SetLow(PIN_PROX_IR_SELECT); /* LOW: select Right IR sender */
+    vTaskDelay(pdMS_TO_TICKS(1));
+  }
+  /* check right side */
+  for(i=0;i<PROX_NOF_LEVELS;i++) {
+    PIN_SetLow(PIN_PROX_IR_SELECT); /* HIGH: select left IR sender */
+    McuWait_Waitus(PROX_durationBurstUs[i]);
+    if (PIN_IsPinLow(PIN_PROX_L)) {
+      PROX_status.countsRight[0]++;
+    }
+    if (PIN_IsPinLow(PIN_PROX_M)) {
+      PROX_status.countsRight[1]++;
+    }
+    if (PIN_IsPinLow(PIN_PROX_R)) {
+      PROX_status.countsRight[2]++;
+    }
+    PIN_SetHigh(PIN_PROX_IR_SELECT); /* High: select left IR sender */
+    vTaskDelay(pdMS_TO_TICKS(1));
+  }
 
 	*pBits = 0;
 #if 1
@@ -128,13 +186,17 @@ uint8_t PROX_ParseCommand(const unsigned char *cmd, bool *handled, const McuShel
 #endif /* PL_CONFIG_HAS_SHELL */
 
 static void ProxTask(void *pvParameters) {
-  int angle = 0;
+  int i, angle = 0;
   uint8_t bits = 0;
 
   (void)pvParameters; /* parameter not used */
   PROX_status.proximityBits = 0;
   PROX_status.proximityAngle = 0;
   PROX_status.proximityFound = FALSE;
+  for(i=0;i<PROX_NOF_SENSORS;i++) { /* init */
+    PROX_status.countsLeft[i] = 0;
+    PROX_status.countsRight[i] = 0;
+  }
   for(;;) {
 	  PROX_status.proximityFound = PROX_CheckProximity(&angle, &bits);
 	  PROX_status.proximityAngle = angle;

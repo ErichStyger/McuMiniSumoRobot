@@ -69,6 +69,7 @@
 									<listOptionValue builtIn="false" value="../../../McuLib/src"/>
 									<listOptionValue builtIn="false" value="../../../McuLib/fonts"/>
 									<listOptionValue builtIn="false" value="../../../McuLib/config"/>
+									<listOptionValue builtIn="false" value="../../../McuLib/config/fonts"/>
 									<listOptionValue builtIn="false" value="../../../McuLib/FreeRTOS/Source/include"/>
 									<listOptionValue builtIn="false" value="../../../McuLib/FreeRTOS/Source/portable/GCC/ARM_CM4F"/>
 									<listOptionValue builtIn="false" value="../../../McuLib/SEGGER_RTT"/>
