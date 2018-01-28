@@ -35,6 +35,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/RoboLib</locationURI>
 		</link>
 		<link>
+			<name>lib</name>
+			<type>2</type>
+			<locationURI>PARENT-4-PROJECT_LOC/McuOnEclipseLibrary/lib</locationURI>
+		</link>
+		<link>
 			<name>doxy/index.html</name>
 			<type>1</type>
 			<locationURI>PROJECT_LOC/doxy/html/index.html</locationURI>
