@@ -1,5 +1,8 @@
 readme.txt
 ----------
+This folder McuLib contains files from the McuOnEclipse library:
+https://github.com/ErichStyger/McuOnEclipseLib
+
 This folder contains all the library sources:
 - config: application specific configuration files
 - src: source files
