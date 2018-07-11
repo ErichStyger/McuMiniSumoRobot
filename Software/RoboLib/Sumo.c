@@ -187,7 +187,7 @@ void SUMO_Init(void) {
   if (xTaskCreate(
     SumoTask,  /* pointer to the task */
         "SumoTask", /* task name for kernel awareness debugging */
-        300/sizeof(StackType_t), /* task stack size */
+        (300+50)/sizeof(StackType_t), /* task stack size */
         (void*)NULL, /* optional task startup argument */
         tskIDLE_PRIORITY+1,  /* initial priority */
         &sumoTaskHndl /* optional task handle to create */

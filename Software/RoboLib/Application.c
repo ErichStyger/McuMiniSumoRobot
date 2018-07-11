@@ -173,7 +173,7 @@ void APP_Run(void) {
   if (xTaskCreate(
 		AppTask,  /* pointer to the task */
         "AppTask", /* task name for kernel awareness debugging */
-        250/sizeof(StackType_t), /* task stack size */
+        (250+50)/sizeof(StackType_t), /* task stack size */
         (void*)NULL, /* optional task startup argument */
         tskIDLE_PRIORITY+1,  /* initial priority */
         (xTaskHandle*)NULL /* optional task handle to create */

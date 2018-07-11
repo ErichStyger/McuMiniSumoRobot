@@ -1,5 +1,5 @@
 /*
- * FreeRTOS Kernel V10.0.0
+ * FreeRTOS Kernel V10.0.1
  * Copyright (C) 2017 Amazon.com, Inc. or its affiliates.  All Rights Reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -10,8 +10,7 @@
  * subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software. If you wish to use our Amazon
- * FreeRTOS name, please do so in a fair use way that does not cause confusion.
+ * copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
@@ -32,7 +31,7 @@
 #include "McuLib.h" /* SDK and API used */
 #include "McuRTOSconfig.h" /* extra configuration settings not part of the original FreeRTOS ports */
 
-#define configINCLUDE_FREERTOS_TASK_C_ADDITIONS_H 0 /* 1: include additional header file at the end of task.c to help with debugging in GDB in combination with configUSE_TRACE_FACILITY; 0: no extra file included. */
+#define configINCLUDE_FREERTOS_TASK_C_ADDITIONS_H 1 /* 1: include additional header file at the end of task.c to help with debugging in GDB in combination with configUSE_TRACE_FACILITY; 0: no extra file included. */
 /*-----------------------------------------------------------
  * Application specific definitions.
  *
@@ -69,7 +68,7 @@
 #define configUSE_MALLOC_FAILED_HOOK_NAME         McuRTOS_vApplicationMallocFailedHook
 #define configTICK_RATE_HZ                        (1000) /* frequency of tick interrupt */
 #define configSYSTICK_USE_LOW_POWER_TIMER         0 /* If using Kinetis Low Power Timer (LPTMR) instead of SysTick timer */
-#define configSYSTICK_LOW_POWER_TIMER_CLOCK_HZ    1000 /* 1 kHz LPO timer. Set to 1 if not used */
+#define configSYSTICK_LOW_POWER_TIMER_CLOCK_HZ    1 /* 1 kHz LPO timer. Set to 1 if not used */
 #if McuLib_CONFIG_NXP_SDK_USED || McuLib_CONFIG_SDK_VERSION_USED==McuLib_CONFIG_SDK_GENERIC
 /* The CMSIS variable SystemCoreClock contains the current clock speed */
   extern uint32_t SystemCoreClock;
@@ -82,12 +81,12 @@
 #define configSYSTICK_USE_CORE_CLOCK              1 /* System Tick is using core clock  */
 #define configSYSTICK_CLOCK_DIVIDER               1 /* no divider */
 #define configSYSTICK_CLOCK_HZ                    ((configCPU_CLOCK_HZ)/configSYSTICK_CLOCK_DIVIDER) /* frequency of system tick counter */
-#define configMINIMAL_STACK_SIZE                  (50) /* stack size in addressable stack units */
+#define configMINIMAL_STACK_SIZE                  (200) /* stack size in addressable stack units */
 /*----------------------------------------------------------*/
 /* Heap Memory */
 #define configUSE_HEAP_SCHEME                     4 /* either 1 (only alloc), 2 (alloc/free), 3 (malloc), 4 (coalesc blocks), 5 (multiple blocks), 6 (newlib) */
 #define configFRTOS_MEMORY_SCHEME                 configUSE_HEAP_SCHEME /* for backwards compatible only with legacy name */
-#define configTOTAL_HEAP_SIZE                     (8192-1024) /* size of heap in bytes */
+#define configTOTAL_HEAP_SIZE                     (8192) /* size of heap in bytes */
 #define configUSE_HEAP_SECTION_NAME               0 /* set to 1 if a custom section name (configHEAP_SECTION_NAME_STRING) shall be used, 0 otherwise */
 #if configUSE_HEAP_SECTION_NAME
 #define configHEAP_SECTION_NAME_STRING            ".m_data_20000000" /* heap section name (use e.g. ".m_data_20000000" for gcc and "m_data_20000000" for IAR). Check your linker file for the name used. */
@@ -113,7 +112,7 @@
 #define configUSE_COUNTING_SEMAPHORES             1
 #define configUSE_APPLICATION_TASK_TAG            0
 /* Tickless Idle Mode ----------------------------------------------------------*/
-#define configUSE_TICKLESS_IDLE                   0 /* set to 1 for tickless idle mode, 0 otherwise */
+#define configUSE_TICKLESS_IDLE                   1 /* set to 1 for tickless idle mode, 0 otherwise */
 #define configEXPECTED_IDLE_TIME_BEFORE_SLEEP     2 /* number of ticks must be larger than this to enter tickless idle mode */
 #define configUSE_TICKLESS_IDLE_DECISION_HOOK     0 /* set to 1 to enable application hook, zero otherwise */
 #define configUSE_TICKLESS_IDLE_DECISION_HOOK_NAME xEnterTicklessIdle /* function name of decision hook */

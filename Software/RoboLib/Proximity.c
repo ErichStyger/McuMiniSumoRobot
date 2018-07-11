@@ -209,7 +209,7 @@ void PROX_Init(void) {
   if (xTaskCreate(
 		ProxTask,  /* pointer to the task */
 		"ProxTask", /* task name for kernel awareness debugging */
-		200/sizeof(StackType_t), /* task stack size */
+		(200+100)/sizeof(StackType_t), /* task stack size */
 		(void*)NULL, /* optional task startup argument */
 		tskIDLE_PRIORITY+2,  /* initial priority */
 		(xTaskHandle*)NULL /* optional task handle to create */
